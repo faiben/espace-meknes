@@ -22,7 +22,7 @@ import { Job, Business, ArtisanRequest, BusinessClaim, ArtisanProfile, Ad } from
 import { categoryEmojis } from "@/lib/categoryEmojis";
 import {
   Store, Users, Briefcase, Megaphone, MapPin, Upload, Download, BarChart3, Settings,
-  CheckCircle, XCircle, Eye, Plus, Trash2, Shield, UserX, AlertTriangle, Pencil, Send, Clock
+  CheckCircle, XCircle, Eye, Plus, Trash2, Shield, UserX, AlertTriangle, Pencil, Send, Clock, Search
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -53,6 +53,8 @@ export default function AdminPage() {
   const [editingArtisan, setEditingArtisan] = useState<ArtisanProfile | null>(null);
   const [adFormOpen, setAdFormOpen] = useState(false);
   const [editingAd, setEditingAd] = useState<Ad | null>(null);
+  const [businessSearch, setBusinessSearch] = useState("");
+  const [artisanSearch, setArtisanSearch] = useState("");
 
   if (!user || user.role !== "admin") {
     return (
@@ -77,6 +79,28 @@ export default function AdminPage() {
   const activeArtisans = allArtisans;
   const activeJobs = allJobs;
   const activeAds = allAds;
+
+  const filteredBusinesses = useMemo(() => {
+    if (!businessSearch.trim()) return activeBusinesses;
+    const q = businessSearch.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return activeBusinesses.filter((b) =>
+      b.nameFr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(q) ||
+      b.nameAr.includes(businessSearch) ||
+      b.phone.includes(businessSearch) ||
+      b.category.includes(q)
+    );
+  }, [businessSearch, activeBusinesses]);
+
+  const filteredArtisans = useMemo(() => {
+    if (!artisanSearch.trim()) return activeArtisans;
+    const q = artisanSearch.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return activeArtisans.filter((a) =>
+      a.nameFr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(q) ||
+      a.nameAr.includes(artisanSearch) ||
+      a.phone.includes(artisanSearch) ||
+      a.specialty.includes(q)
+    );
+  }, [artisanSearch, activeArtisans]);
 
   const tabs: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
     { key: "overview", label: isArabic ? "نظرة عامة" : "Vue d'ensemble", icon: <BarChart3 size={18} /> },
@@ -219,8 +243,18 @@ export default function AdminPage() {
           {tab === "businesses" && (
             <div className="bg-white rounded-2xl border border-emerald-100 card-shadow overflow-hidden">
               <div className="flex items-center justify-between p-4 border-b border-emerald-100">
-                <h2 className="font-bold text-navy-800">{t.manageBusinesses} ({activeBusinesses.length})</h2>
+                <h2 className="font-bold text-navy-800">{t.manageBusinesses} ({filteredBusinesses.length})</h2>
                 <div className="flex gap-2">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy-400" />
+                    <input
+                      type="text"
+                      value={businessSearch}
+                      onChange={(e) => setBusinessSearch(e.target.value)}
+                      placeholder={isArabic ? "بحث..." : "Rechercher..."}
+                      className="pl-8 pr-3 py-1.5 rounded-lg border border-emerald-200 text-sm bg-white text-navy-800 w-48"
+                    />
+                  </div>
                   <button
                     onClick={() => setCsvImportOpen(true)}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-sm font-medium hover:bg-blue-100"
@@ -236,7 +270,7 @@ export default function AdminPage() {
                 </div>
               </div>
               <div className="divide-y divide-emerald-100">
-                {activeBusinesses.map((b) => (
+                {filteredBusinesses.map((b) => (
                   <div key={b.id} className="flex items-center gap-4 p-4 hover:bg-primary-50">
                     <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center text-lg shrink-0">
                       {categoryEmojis[b.category]}
@@ -281,8 +315,18 @@ export default function AdminPage() {
           {tab === "artisans" && (
             <div className="bg-white rounded-2xl border border-emerald-100 card-shadow overflow-hidden">
               <div className="flex items-center justify-between p-4 border-b border-emerald-100">
-                <h2 className="font-bold text-navy-800">{t.manageArtisans} ({activeArtisans.length})</h2>
+                <h2 className="font-bold text-navy-800">{t.manageArtisans} ({filteredArtisans.length})</h2>
                 <div className="flex gap-2">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy-400" />
+                    <input
+                      type="text"
+                      value={artisanSearch}
+                      onChange={(e) => setArtisanSearch(e.target.value)}
+                      placeholder={isArabic ? "بحث..." : "Rechercher..."}
+                      className="pl-8 pr-3 py-1.5 rounded-lg border border-emerald-200 text-sm bg-white text-navy-800 w-48"
+                    />
+                  </div>
                   <button
                     onClick={() => { setEditingArtisan(null); setArtisanFormOpen(true); }}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-50 text-primary-700 text-sm font-medium hover:bg-primary-100"
@@ -298,12 +342,13 @@ export default function AdminPage() {
                 </div>
               </div>
               <div className="divide-y divide-emerald-100">
-                {activeArtisans.map((a) => (
+                {filteredArtisans.map((a) => (
                   <div key={a.id} className="flex items-center gap-4 p-4 hover:bg-primary-50">
                     <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-lg shrink-0">🔧</div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-navy-800 truncate">{isArabic ? a.nameAr : a.nameFr}</p>
                       <p className="text-xs text-navy-500">{t.specialties[a.specialty]} · ⭐ {a.rating} · {a.jobsCompleted} {isArabic ? "مهمة" : "missions"}</p>
+                      <p className="text-xs text-navy-500 mt-0.5">📞 {a.phone}</p>
                     </div>
                     <span className={clsx(
                       "text-xs font-medium px-2 py-1 rounded-lg shrink-0",
