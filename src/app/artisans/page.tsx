@@ -17,7 +17,6 @@ function ArtisansContent() {
   const { settings } = useAppSettings();
   const { allArtisans } = useArtisanStore();
   const [query, setQuery] = useState("");
-  const [selectedArea, setSelectedArea] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
   const [nearMe, setNearMe] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -39,13 +38,13 @@ function ArtisansContent() {
   };
 
   const filtered = useMemo(() => {
-    let results = searchArtisans(query, selectedArea || undefined, selectedSpecialty || undefined, allArtisans).filter((a) => a.isVisible);
+    let results = searchArtisans(query, undefined, selectedSpecialty || undefined, allArtisans).filter((a) => a.isVisible);
     if (nearMe && userLocation) {
       results = sortByDistance(results, userLocation.lat, userLocation.lng)
         .filter((a) => a.distance <= radius);
     }
     return results;
-  }, [query, selectedArea, selectedSpecialty, nearMe, userLocation, radius, allArtisans]);
+  }, [query, selectedSpecialty, nearMe, userLocation, radius, allArtisans]);
 
   const handleRequest = (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,16 +184,6 @@ function ArtisansContent() {
           <SearchBar onSearch={setQuery} initialValue={query} />
         </div>
         <select
-          value={selectedArea}
-          onChange={(e) => setSelectedArea(e.target.value)}
-          className="px-3 py-2 rounded-xl border border-emerald-200 text-sm bg-white"
-        >
-          <option value="">{t.allAreas}</option>
-          {areas.map((a) => (
-            <option key={a.id} value={a.id}>{isArabic ? a.nameAr : a.nameFr}</option>
-          ))}
-        </select>
-        <select
           value={selectedSpecialty}
           onChange={(e) => setSelectedSpecialty(e.target.value)}
           className="px-3 py-2 rounded-xl border border-emerald-200 text-sm bg-white"
@@ -216,9 +205,9 @@ function ArtisansContent() {
           <Navigation size={16} />
           {t.nearMe}
         </button>
-        {(selectedArea || selectedSpecialty || nearMe) && (
+        {(selectedSpecialty || nearMe) && (
           <button
-            onClick={() => { setSelectedArea(""); setSelectedSpecialty(""); setNearMe(false); setUserLocation(null); }}
+            onClick={() => { setSelectedSpecialty(""); setNearMe(false); setUserLocation(null); }}
             className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-sm text-red-500 hover:text-red-600 hover:bg-red-50 border border-red-200 transition-colors"
           >
             <X size={14} /> {t.resetFilters}

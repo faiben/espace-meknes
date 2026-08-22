@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
-import { areas } from "@/data";
 import { useBusinessStore } from "@/hooks/useBusinessStore";
 import { searchBusinesses, sortByDistance } from "@/utils/search";
 import { BusinessCard } from "@/components/BusinessCard";
@@ -16,7 +15,6 @@ function AnnuaireContent() {
   const { t, isArabic } = useLang();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
-  const [selectedArea, setSelectedArea] = useState(searchParams.get("area") || "");
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "");
   const [showFilters, setShowFilters] = useState(false);
   const [showMap, setShowMap] = useState(searchParams.get("map") === "true");
@@ -39,14 +37,14 @@ function AnnuaireContent() {
   const { allBusinesses } = useBusinessStore();
 
   const filtered = useMemo(() => {
-    let results = searchBusinesses(query, selectedArea || undefined, selectedCategory || undefined, allBusinesses);
+    let results = searchBusinesses(query, undefined, selectedCategory || undefined, allBusinesses);
     if (nearMe && userLocation) {
       results = sortByDistance(results, userLocation.lat, userLocation.lng).filter(
         (b) => b.distance <= radius
       );
     }
     return results;
-  }, [query, selectedArea, selectedCategory, nearMe, userLocation, radius, allBusinesses]);
+  }, [query, selectedCategory, nearMe, userLocation, radius, allBusinesses]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -72,23 +70,6 @@ function AnnuaireContent() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-navy-800">{t.filter}</h3>
               <SlidersHorizontal size={18} className="text-navy-400" />
-            </div>
-
-            {/* Area filter */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-navy-700 mb-1">{t.neighborhood}</label>
-              <select
-                value={selectedArea}
-                onChange={(e) => setSelectedArea(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-navy-50"
-              >
-                <option value="">{t.allAreas}</option>
-                {areas.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {isArabic ? a.nameAr : a.nameFr} ({a.postalCode})
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Category filter */}
@@ -147,9 +128,9 @@ function AnnuaireContent() {
             </button>
 
             {/* Reset */}
-            {(selectedArea || selectedCategory || nearMe) && (
+            {(selectedCategory || nearMe) && (
               <button
-                onClick={() => { setSelectedArea(""); setSelectedCategory(""); setNearMe(false); setUserLocation(null); }}
+                onClick={() => { setSelectedCategory(""); setNearMe(false); setUserLocation(null); }}
                 className="w-full mt-3 flex items-center justify-center gap-1 text-sm text-red-500 hover:text-red-600"
               >
                 <X size={14} /> {t.resetFilters}
