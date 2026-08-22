@@ -21,20 +21,34 @@ function ArtisansContent() {
   const [nearMe, setNearMe] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [radius, setRadius] = useState(10);
+  const [locating, setLocating] = useState(false);
   const [showRequest, setShowRequest] = useState(false);
   const [requestForm, setRequestForm] = useState({ description: "", specialty: "", area: "", phone: "", name: "" });
   const [requestSent, setRequestSent] = useState(false);
 
   const handleNearMe = () => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          setNearMe(true);
-        },
-        () => alert(isArabic ? "تعذر تحديد الموقع" : "Impossible d'obtenir la localisation")
-      );
+    if (nearMe) {
+      setNearMe(false);
+      setUserLocation(null);
+      return;
     }
+    if (!("geolocation" in navigator)) {
+      alert(isArabic ? "المتصفح لا يدعم تحديد الموقع" : "La géolocalisation n'est pas disponible");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setNearMe(true);
+        setLocating(false);
+      },
+      () => {
+        alert(isArabic ? "تعذر تحديد الموقع. تأكد من تفعيل خدمات الموقع." : "Impossible d'obtenir la localisation. Vérifiez les paramètres de localisation.");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+    );
   };
 
   const filtered = useMemo(() => {
@@ -195,15 +209,17 @@ function ArtisansContent() {
         </select>
         <button
           onClick={handleNearMe}
+          disabled={locating}
           className={clsx(
             "flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors",
             nearMe
               ? "bg-primary-600 text-white"
-              : "bg-primary-50 text-primary-700 hover:bg-primary-100 border border-emerald-200"
+              : "bg-primary-50 text-primary-700 hover:bg-primary-100 border border-emerald-200",
+            locating && "opacity-60 cursor-wait"
           )}
         >
-          <Navigation size={16} />
-          {t.nearMe}
+          <Navigation size={16} className={locating ? "animate-spin" : ""} />
+          {locating ? (isArabic ? "جاري التحديد..." : "Localisation...") : t.nearMe}
         </button>
         {(selectedSpecialty || nearMe) && (
           <button

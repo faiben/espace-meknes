@@ -13,6 +13,9 @@ import { StarRating } from "@/components/StarRating";
 import { AdBanner } from "@/components/AdBanner";
 import { MapPin, Star, Phone, Mail, Globe, ArrowLeft, Heart, Share2, Tag, Navigation, MessageCircle, ChevronLeft, ChevronRight, Play, Send, BadgeCheck } from "lucide-react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const BusinessMap = dynamic(() => import("@/components/BusinessMap").then((m) => m.BusinessMap), { ssr: false });
 
 export default function BusinessDetailPage() {
   const { t, isArabic } = useLang();
@@ -241,13 +244,17 @@ export default function BusinessDetailPage() {
           </button>
         )}
 
-        {/* Map (pro/premium only) */}
-        {hasExtra && (
-          <div className="mt-6 rounded-xl bg-navy-50 h-48 flex items-center justify-center relative overflow-hidden">
-            <MapPin size={36} className="text-primary-500" />
-            <p className="absolute bottom-2 left-2 text-xs bg-white/80 px-2 py-1 rounded text-navy-500">
-              {business.lat.toFixed(4)}, {business.lng.toFixed(4)}
-            </p>
+        {/* Map */}
+        {hasExtra && business.lat !== 0 && business.lng !== 0 && (
+          <div className="mt-6">
+            <BusinessMap
+              businesses={[business]}
+              visible={true}
+              height="h-64"
+              center={[business.lat, business.lng]}
+              zoom={15}
+              singleMarker
+            />
           </div>
         )}
       </div>
