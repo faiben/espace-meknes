@@ -1,72 +1,32 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Ad } from "@/types";
-import { ads as seedAds } from "@/data";
-
-const STORAGE_KEY = "espace-meknes-ads";
-const CHANGE_EVENT = "em-ads-changed";
-
-function readFromStorage(): Ad[] {
-  if (typeof window === "undefined") return seedAds;
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch {}
-  return seedAds;
-}
-
-function writeToStorage(list: Ad[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  window.dispatchEvent(new Event(CHANGE_EVENT));
-}
+import { supabase } from "@/lib/supabase";
 
 export function useAdStore() {
   const [allAds, setAllAds] = useState<Ad[]>([]);
-  const isLocalChange = useRef(false);
 
   useEffect(() => {
-    setAllAds(readFromStorage());
-
-    const handleChange = () => {
-      if (!isLocalChange.current) {
-        setAllAds(readFromStorage());
-      }
-      isLocalChange.current = false;
-    };
-    window.addEventListener(CHANGE_EVENT, handleChange);
-    return () => window.removeEventListener(CHANGE_EVENT, handleChange);
+    (async () => {
+      const { data } = await supabase.from("ads").select("*");
+      if (data) setAllAds(data as Ad[]);
+    })();
   }, []);
 
-  const addAd = useCallback((ad: Ad) => {
-    setAllAds((prev) => {
-      const next = [ad, ...prev];
-      isLocalChange.current = true;
-      writeToStorage(next);
-      return next;
-    });
+  const addAd = useCallback(async (ad: Ad) => {
+    setAllAds((prev) => [ad, ...prev]);
+    await supabase.from("ads").upsert(ad);
   }, []);
 
-  const updateAd = useCallback((updated: Ad) => {
-    setAllAds((prev) => {
-      const next = prev.map((a) => (a.id === updated.id ? updated : a));
-      isLocalChange.current = true;
-      writeToStorage(next);
-      return next;
-    });
+  const updateAd = useCallback(async (updated: Ad) => {
+    setAllAds((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+    await supabase.from("ads").upsert(updated);
   }, []);
 
-  const deleteAd = useCallback((id: string) => {
-    setAllAds((prev) => {
-      const next = prev.filter((a) => a.id !== id);
-      isLocalChange.current = true;
-      writeToStorage(next);
-      return next;
-    });
+  const deleteAd = useCallback(async (id: string) => {
+    setAllAds((prev) => prev.filter((a) => a.id !== id));
+    await supabase.from("ads").delete().eq("id", id);
   }, []);
 
   const getActiveAds = useCallback(

@@ -2,49 +2,33 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ArtisanRequest } from "@/types";
-
-const STORAGE_KEY = "espace-meknes-artisan-requests";
-
-function loadRequests(): ArtisanRequest[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch {}
-  return [];
-}
-
-function saveRequests(requests: ArtisanRequest[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
-}
+import { supabase } from "@/lib/supabase";
 
 export function useArtisanRequestStore() {
   const [requests, setRequests] = useState<ArtisanRequest[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setRequests(loadRequests());
-    setLoaded(true);
+    (async () => {
+      const { data } = await supabase.from("artisan_requests").select("*");
+      if (data) setRequests(data as ArtisanRequest[]);
+      setLoaded(true);
+    })();
   }, []);
 
-  useEffect(() => {
-    if (loaded) saveRequests(requests);
-  }, [requests, loaded]);
-
-  const addRequest = useCallback((req: ArtisanRequest) => {
+  const addRequest = useCallback(async (req: ArtisanRequest) => {
     setRequests((prev) => [req, ...prev]);
+    await supabase.from("artisan_requests").upsert(req);
   }, []);
 
-  const updateRequest = useCallback((updated: ArtisanRequest) => {
+  const updateRequest = useCallback(async (updated: ArtisanRequest) => {
     setRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    await supabase.from("artisan_requests").upsert(updated);
   }, []);
 
-  const deleteRequest = useCallback((id: string) => {
+  const deleteRequest = useCallback(async (id: string) => {
     setRequests((prev) => prev.filter((r) => r.id !== id));
+    await supabase.from("artisan_requests").delete().eq("id", id);
   }, []);
 
   return { requests, addRequest, updateRequest, deleteRequest, loaded };

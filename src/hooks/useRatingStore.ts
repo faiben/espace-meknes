@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 
 export interface Rating {
   id: string;
@@ -10,25 +11,6 @@ export interface Rating {
   stars: number;
   comment: string;
   createdAt: string;
-}
-
-const STORAGE_KEY = "espace-meknes-ratings";
-
-function loadRatings(): Rating[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch {}
-  return [];
-}
-
-function saveRatings(ratings: Rating[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(ratings));
 }
 
 function getDeviceId(): string {
@@ -46,15 +28,14 @@ export function useRatingStore() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setRatings(loadRatings());
-    setLoaded(true);
+    (async () => {
+      const { data } = await supabase.from("ratings").select("*");
+      if (data) setRatings(data as Rating[]);
+      setLoaded(true);
+    })();
   }, []);
 
-  useEffect(() => {
-    if (loaded) saveRatings(ratings);
-  }, [ratings, loaded]);
-
-  const addRating = useCallback((rating: Omit<Rating, "id" | "createdAt">) => {
+  const addRating = useCallback(async (rating: Omit<Rating, "id" | "createdAt">) => {
     const deviceId = getDeviceId();
     const newRating: Rating = {
       ...rating,
@@ -63,6 +44,7 @@ export function useRatingStore() {
       userName: rating.userName || deviceId.slice(0, 8),
     };
     setRatings((prev) => [newRating, ...prev]);
+    await supabase.from("ratings").upsert(newRating);
     return newRating;
   }, []);
 
@@ -112,8 +94,9 @@ export function useRatingStore() {
     [ratings]
   );
 
-  const deleteRating = useCallback((id: string) => {
+  const deleteRating = useCallback(async (id: string) => {
     setRatings((prev) => prev.filter((r) => r.id !== id));
+    await supabase.from("ratings").delete().eq("id", id);
   }, []);
 
   return { ratings, addRating, getBusinessRatings, getArtisanRatings, getBusinessAverage, getArtisanAverage, hasUserRated, hasUserRatedArtisan, deleteRating, loaded };

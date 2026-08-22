@@ -2,138 +2,128 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 import { User, UserRole } from "@/types";
-
-interface StoredUser extends User {
-  passwordHash: string;
-}
-
-const ADMIN_USER: StoredUser = {
-  id: "admin-1",
-  name: "Admin Meknès",
-  email: "admin@espace-meknes.ma",
-  passwordHash: "admin123",
-  role: "admin",
-  favorites: [],
-  createdAt: "2024-01-01",
-};
-
-const USERS_KEY = "em_users";
-const SESSION_KEY = "em_session";
-
-function getUsers(): StoredUser[] {
-  if (typeof window === "undefined") return [ADMIN_USER];
-  const raw = localStorage.getItem(USERS_KEY);
-  if (!raw) {
-    localStorage.setItem(USERS_KEY, JSON.stringify([ADMIN_USER]));
-    return [ADMIN_USER];
-  }
-  const users = JSON.parse(raw) as StoredUser[];
-  const hasAdmin = users.some((u) => u.role === "admin");
-  if (!hasAdmin) {
-    users.push(ADMIN_USER);
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  }
-  return users;
-}
-
-function saveUsers(users: StoredUser[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function getSession(): User | null {
-  if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem(SESSION_KEY);
-  return raw ? JSON.parse(raw) : null;
-}
-
-function setSession(user: User | null) {
-  if (user) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-  } else {
-    localStorage.removeItem(SESSION_KEY);
-  }
-}
+import { supabase } from "@/lib/supabase";
 
 interface AuthContextType {
   user: User | null;
   users: User[];
   loading: boolean;
-  login: (email: string, password: string) => { ok: boolean; error?: string };
-  register: (name: string, email: string, password: string, role: UserRole) => { ok: boolean; error?: string };
-  logout: () => void;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  register: (name: string, email: string, password: string, role: UserRole) => Promise<{ ok: boolean; error?: string }>;
+  logout: () => Promise<void>;
   toggleFavorite: (id: string) => void;
   isFavorite: (id: string) => boolean;
   deleteUser: (id: string) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
-  getAdminUsers: () => StoredUser[];
+  getAdminUsers: () => Promise<User[]>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [allUsers, setAllUsers] = useState<StoredUser[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const session = getSession();
-    const users = getUsers();
-    setUser(session);
-    setAllUsers(users);
-    setLoading(false);
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
+        if (profile) {
+          setUser({
+            id: profile.id,
+            name: profile.name,
+            email: profile.email,
+            role: profile.role,
+            favorites: profile.favorites || [],
+            createdAt: profile.created_at,
+          });
+        }
+      }
+      setLoading(false);
+    })();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
+        if (profile) {
+          setUser({
+            id: profile.id,
+            name: profile.name,
+            email: profile.email,
+            role: profile.role,
+            favorites: profile.favorites || [],
+            createdAt: profile.created_at,
+          });
+        }
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = useCallback((email: string, password: string): { ok: boolean; error?: string } => {
-    const users = getUsers();
-    const found = users.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.passwordHash === password);
-    if (!found) return { ok: false, error: "Email ou mot de passe incorrect" };
-    const { passwordHash, ...userData } = found;
-    setUser(userData);
-    setSession(userData);
+  const login = useCallback(async (email: string, password: string): Promise<{ ok: boolean; error?: string }> => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, error: error.message.includes("Invalid") ? "Email ou mot de passe incorrect" : error.message };
+
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("*")
+      .eq("id", data.user.id)
+      .single();
+    if (profile) {
+      setUser({
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        role: profile.role,
+        favorites: profile.favorites || [],
+        createdAt: profile.created_at,
+      });
+    }
     return { ok: true };
   }, []);
 
-  const register = useCallback((name: string, email: string, password: string, role: UserRole): { ok: boolean; error?: string } => {
-    const users = getUsers();
-    if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
-      return { ok: false, error: "Cet email est déjà utilisé" };
-    }
-    const newUser: StoredUser = {
-      id: `user-${Date.now()}`,
+  const register = useCallback(async (name: string, email: string, password: string, role: UserRole): Promise<{ ok: boolean; error?: string }> => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) return { ok: false, error: error.message.includes("already") ? "Cet email est déjà utilisé" : error.message };
+    if (!data.user) return { ok: false, error: "Erreur lors de l'inscription" };
+
+    await supabase.from("user_profiles").upsert({
+      id: data.user.id,
       name,
       email,
-      passwordHash: password,
       role,
       favorites: [],
-      createdAt: new Date().toISOString(),
-    };
-    users.push(newUser);
-    saveUsers(users);
-    setAllUsers([...users]);
-    const { passwordHash, ...userData } = newUser;
-    setUser(userData);
-    setSession(userData);
+      created_at: new Date().toISOString(),
+    });
+
+    setUser({ id: data.user.id, name, email, role, favorites: [], createdAt: new Date().toISOString() });
     return { ok: true };
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    setSession(null);
   }, []);
 
-  const toggleFavorite = useCallback((id: string) => {
+  const toggleFavorite = useCallback(async (id: string) => {
     setUser((prev) => {
       if (!prev) return prev;
       const favs = prev.favorites.includes(id) ? prev.favorites.filter((f) => f !== id) : [...prev.favorites, id];
       const updated = { ...prev, favorites: favs };
-      setSession(updated);
-      const users = getUsers();
-      const idx = users.findIndex((u) => u.id === prev.id);
-      if (idx >= 0) {
-        users[idx] = { ...users[idx], favorites: favs };
-        saveUsers(users);
-        setAllUsers([...users]);
-      }
+      supabase.from("user_profiles").update({ favorites: favs }).eq("id", prev.id);
       return updated;
     });
   }, []);
@@ -142,24 +132,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user?.favorites.includes(id) ?? false;
   }, [user]);
 
-  const deleteUser = useCallback((id: string) => {
-    const users = getUsers().filter((u) => u.id !== id);
-    saveUsers(users);
-    setAllUsers([...users]);
+  const deleteUser = useCallback(async (id: string) => {
+    setAllUsers((prev) => prev.filter((u) => u.id !== id));
   }, []);
 
-  const updateUser = useCallback((id: string, updates: Partial<User>) => {
-    const users = getUsers();
-    const idx = users.findIndex((u) => u.id === id);
-    if (idx >= 0) {
-      users[idx] = { ...users[idx], ...updates };
-      saveUsers(users);
-      setAllUsers([...users]);
+  const updateUser = useCallback(async (id: string, updates: Partial<User>) => {
+    setAllUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...updates } : u)));
+    await supabase.from("user_profiles").update(updates).eq("id", id);
+  }, []);
+
+  const getAdminUsers = useCallback(async () => {
+    const { data } = await supabase.from("user_profiles").select("*");
+    if (data) {
+      setAllUsers(data.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, favorites: u.favorites || [], createdAt: u.created_at })));
+      return data.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, favorites: u.favorites || [], createdAt: u.created_at }));
     }
-  }, []);
-
-  const getAdminUsers = useCallback(() => {
-    return getUsers();
+    return [];
   }, []);
 
   return (

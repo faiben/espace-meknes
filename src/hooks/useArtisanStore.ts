@@ -1,68 +1,34 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ArtisanProfile } from "@/types";
-import { artisans as seedArtisans } from "@/data";
-
-const STORAGE_KEY = "espace-meknes-artisans";
-
-function loadArtisans(): ArtisanProfile[] {
-  if (typeof window === "undefined") return seedArtisans;
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch {}
-  return seedArtisans;
-}
-
-function saveAndNotify(artisanList: ArtisanProfile[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(artisanList));
-  window.dispatchEvent(new CustomEvent("em-artisans-changed"));
-}
+import { supabase } from "@/lib/supabase";
 
 export function useArtisanStore() {
-  const [allArtisans, setAllArtisans] = useState<ArtisanProfile[]>(loadArtisans);
+  const [allArtisans, setAllArtisans] = useState<ArtisanProfile[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const isLocalChange = useRef(false);
 
   useEffect(() => {
-    setAllArtisans(loadArtisans());
-    setLoaded(true);
+    (async () => {
+      const { data } = await supabase.from("artisans").select("*");
+      if (data) setAllArtisans(data as ArtisanProfile[]);
+      setLoaded(true);
+    })();
   }, []);
 
-  useEffect(() => {
-    if (loaded) {
-      isLocalChange.current = true;
-      saveAndNotify(allArtisans);
-      const t = setTimeout(() => { isLocalChange.current = false; }, 100);
-      return () => clearTimeout(t);
-    }
-  }, [allArtisans, loaded]);
-
-  useEffect(() => {
-    const handler = () => {
-      if (!isLocalChange.current) {
-        setAllArtisans(loadArtisans());
-      }
-    };
-    window.addEventListener("em-artisans-changed", handler);
-    return () => window.removeEventListener("em-artisans-changed", handler);
-  }, []);
-
-  const addArtisan = useCallback((artisan: ArtisanProfile) => {
+  const addArtisan = useCallback(async (artisan: ArtisanProfile) => {
     setAllArtisans((prev) => [artisan, ...prev]);
+    await supabase.from("artisans").upsert(artisan);
   }, []);
 
-  const updateArtisan = useCallback((updated: ArtisanProfile) => {
+  const updateArtisan = useCallback(async (updated: ArtisanProfile) => {
     setAllArtisans((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+    await supabase.from("artisans").upsert(updated);
   }, []);
 
-  const deleteArtisan = useCallback((id: string) => {
+  const deleteArtisan = useCallback(async (id: string) => {
     setAllArtisans((prev) => prev.filter((a) => a.id !== id));
+    await supabase.from("artisans").delete().eq("id", id);
   }, []);
 
   return { allArtisans, addArtisan, updateArtisan, deleteArtisan, loaded };

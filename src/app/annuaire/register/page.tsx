@@ -159,7 +159,7 @@ export default function BusinessRegisterPage() {
     }
   }
 
-  function handleAccountSubmit(e: React.FormEvent) {
+  async function handleAccountSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
@@ -172,7 +172,7 @@ export default function BusinessRegisterPage() {
       return;
     }
 
-    const result = register(account.name, account.email, account.password, "merchant");
+    const result = await register(account.name, account.email, account.password, "merchant");
     if (!result.ok) {
       setError(result.error || "");
       return;

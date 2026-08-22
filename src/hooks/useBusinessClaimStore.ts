@@ -2,40 +2,21 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { BusinessClaim } from "@/types";
-
-const STORAGE_KEY = "espace-meknes-claims";
-
-function loadClaims(): BusinessClaim[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch {}
-  return [];
-}
-
-function saveClaims(claims: BusinessClaim[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(claims));
-}
+import { supabase } from "@/lib/supabase";
 
 export function useBusinessClaimStore() {
   const [claims, setClaims] = useState<BusinessClaim[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setClaims(loadClaims());
-    setLoaded(true);
+    (async () => {
+      const { data } = await supabase.from("business_claims").select("*");
+      if (data) setClaims(data as BusinessClaim[]);
+      setLoaded(true);
+    })();
   }, []);
 
-  useEffect(() => {
-    if (loaded) saveClaims(claims);
-  }, [claims, loaded]);
-
-  const addClaim = useCallback((claim: Omit<BusinessClaim, "id" | "createdAt" | "status">) => {
+  const addClaim = useCallback(async (claim: Omit<BusinessClaim, "id" | "createdAt" | "status">) => {
     const newClaim: BusinessClaim = {
       ...claim,
       id: `claim-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -43,15 +24,18 @@ export function useBusinessClaimStore() {
       createdAt: new Date().toISOString(),
     };
     setClaims((prev) => [newClaim, ...prev]);
+    await supabase.from("business_claims").upsert(newClaim);
     return newClaim;
   }, []);
 
-  const updateClaim = useCallback((updated: BusinessClaim) => {
+  const updateClaim = useCallback(async (updated: BusinessClaim) => {
     setClaims((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    await supabase.from("business_claims").upsert(updated);
   }, []);
 
-  const deleteClaim = useCallback((id: string) => {
+  const deleteClaim = useCallback(async (id: string) => {
     setClaims((prev) => prev.filter((c) => c.id !== id));
+    await supabase.from("business_claims").delete().eq("id", id);
   }, []);
 
   const getClaimForBusiness = useCallback(

@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { AppSettings } from "@/types";
-
-const STORAGE_KEY = "espace-meknes-settings";
+import { supabase } from "@/lib/supabase";
 
 const DEFAULTS: AppSettings = {
   whatsappNumber: "+212600000000",
@@ -11,35 +10,35 @@ const DEFAULTS: AppSettings = {
   adsEnabled: true,
 };
 
-function loadSettings(): AppSettings {
-  if (typeof window === "undefined") return DEFAULTS;
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return { ...DEFAULTS, ...JSON.parse(stored) };
-  } catch {}
-  return DEFAULTS;
-}
-
-function saveSettings(s: AppSettings) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-}
-
 export function useAppSettings() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULTS);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setSettings(loadSettings());
-    setLoaded(true);
+    (async () => {
+      const { data } = await supabase.from("app_settings").select("*").eq("id", "main").single();
+      if (data) {
+        setSettings({
+          whatsappNumber: data.whatsapp_number || DEFAULTS.whatsappNumber,
+          supportEmail: data.support_email || DEFAULTS.supportEmail,
+          adsEnabled: data.ads_enabled ?? DEFAULTS.adsEnabled,
+        });
+      }
+      setLoaded(true);
+    })();
   }, []);
 
-  useEffect(() => {
-    if (loaded) saveSettings(settings);
-  }, [settings, loaded]);
-
-  const updateSettings = useCallback((updates: Partial<AppSettings>) => {
-    setSettings((prev) => ({ ...prev, ...updates }));
+  const updateSettings = useCallback(async (updates: Partial<AppSettings>) => {
+    setSettings((prev) => {
+      const next = { ...prev, ...updates };
+      supabase.from("app_settings").upsert({
+        id: "main",
+        whatsapp_number: next.whatsappNumber,
+        support_email: next.supportEmail,
+        ads_enabled: next.adsEnabled,
+      });
+      return next;
+    });
   }, []);
 
   return { settings, updateSettings, loaded };

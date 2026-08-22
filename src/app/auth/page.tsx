@@ -21,7 +21,7 @@ export default function AuthPage() {
     if (user) router.push("/dashboard");
   }, [user, router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -34,10 +34,10 @@ export default function AuthPage() {
         setError(isArabic ? "كلمة المرور 6 أحرف على الأقل" : "Le mot de passe doit contenir au moins 6 caractères");
         return;
       }
-      const result = register(form.name, form.email, form.password, form.role as any);
+      const result = await register(form.name, form.email, form.password, form.role as any);
       if (!result.ok) { setError(result.error || ""); return; }
     } else {
-      const result = login(form.email, form.password);
+      const result = await login(form.email, form.password);
       if (!result.ok) { setError(result.error || ""); return; }
     }
     setSubmitted(true);
