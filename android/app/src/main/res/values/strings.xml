@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Espace Meknès</string>
+    <string name="title_activity_main">Espace Meknès</string>
+    <string name="package_name">com.espacemeknes.app</string>
+    <string name="custom_url_scheme">com.espacemeknes.app</string>
+</resources>
