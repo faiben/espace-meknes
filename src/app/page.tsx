@@ -12,18 +12,7 @@ import { JobCard } from "@/components/JobCard";
 import { AdBanner } from "@/components/AdBanner";
 import { MapPin, Briefcase, Hammer, Store, ArrowRight, Search, CheckCircle, Phone } from "lucide-react";
 
-const categoryIcons: Record<string, { fr: string; ar: string; icon: string }> = {
-  restaurant: { fr: "Restaurant", ar: "مطعم", icon: "🍽️" },
-  cafe: { fr: "Café", ar: "مقهى", icon: "☕" },
-  boulangerie: { fr: "Boulangerie", ar: "مخبزة", icon: "🥐" },
-  pharmacie: { fr: "Pharmacie", ar: "صيدلية", icon: "💊" },
-  garage: { fr: "Garage", ar: "ورشة", icon: "🔧" },
-  coiffure: { fr: "Coiffure", ar: "صالون", icon: "💇" },
-  immobilier: { fr: "Immobilier", ar: "عقارات", icon: "🏠" },
-  sante: { fr: "Santé", ar: "صحة", icon: "🏥" },
-  technologie: { fr: "Tech", ar: "تكنولوجيا", icon: "💻" },
-  epicerie: { fr: "Épicerie", ar: "بقالة", icon: "🛒" },
-};
+
 
 export default function HomePage() {
   const { t, isArabic } = useLang();
@@ -117,16 +106,21 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            {Object.entries(categoryIcons).map(([key, val]) => (
-              <Link
-                key={key}
-                href={`/annuaire?category=${key}`}
-                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-white border border-emerald-100 card-shadow hover:border-primary-300 transition-all group"
-              >
-                <span className="text-3xl group-hover:scale-110 transition-transform">{val.icon}</span>
-                <span className="text-sm font-medium text-navy-700">{isArabic ? val.ar : val.fr}</span>
-              </Link>
-            ))}
+            {Object.entries(t.categories).map(([key, label]) => {
+              const parts = label.split(" ");
+              const icon = parts[parts.length - 1];
+              const name = parts.slice(0, -1).join(" ");
+              return (
+                <Link
+                  key={key}
+                  href={`/annuaire?category=${key}`}
+                  className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-white border border-emerald-100 card-shadow hover:border-primary-300 transition-all group"
+                >
+                  <span className="text-3xl group-hover:scale-110 transition-transform">{icon}</span>
+                  <span className="text-sm font-medium text-navy-700">{name}</span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
