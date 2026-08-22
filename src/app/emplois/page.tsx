@@ -3,7 +3,6 @@
 import { useState, useMemo, Suspense, Fragment } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
-import { areas } from "@/data";
 import { useJobStore } from "@/hooks/useJobStore";
 import { JobCard } from "@/components/JobCard";
 import { AdBanner } from "@/components/AdBanner";
@@ -13,7 +12,6 @@ import { Briefcase, Building2, Users } from "lucide-react";
 function EmploisContent() {
   const { t, isArabic } = useLang();
   const [query, setQuery] = useState("");
-  const [selectedArea, setSelectedArea] = useState("");
   const [selectedSector, setSelectedSector] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [activeTab, setActiveTab] = useState<"jobs" | "seekers">("jobs");
@@ -32,12 +30,11 @@ function EmploisContent() {
         j.titleFr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(normalized) ||
         j.titleAr.includes(query) ||
         j.company.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(normalized);
-      const areaMatch = !selectedArea || j.areaId === selectedArea;
       const sectorMatch = !selectedSector || j.sector === selectedSector;
       const typeMatch = !selectedType || j.jobType === selectedType;
-      return titleMatch && areaMatch && sectorMatch && typeMatch;
+      return titleMatch && sectorMatch && typeMatch;
     });
-  }, [query, selectedArea, selectedSector, selectedType, allJobs]);
+  }, [query, selectedSector, selectedType, allJobs]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -69,18 +66,8 @@ function EmploisContent() {
       {activeTab === "jobs" ? (
         <>
           {/* Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
             <SearchBar onSearch={setQuery} initialValue={query} />
-            <select
-              value={selectedArea}
-              onChange={(e) => setSelectedArea(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-emerald-200 text-sm bg-white"
-            >
-              <option value="">{t.allAreas}</option>
-              {areas.map((a) => (
-                <option key={a.id} value={a.id}>{isArabic ? a.nameAr : a.nameFr}</option>
-              ))}
-            </select>
             <select
               value={selectedSector}
               onChange={(e) => setSelectedSector(e.target.value)}
