@@ -1,0 +1,10 @@
+version: "3.8"
+services:
+  espace-meknes:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: espace-meknes
+    ports:
+      - "3001:3001"
+    restart: unless-stopped

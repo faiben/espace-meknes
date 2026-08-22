@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap");
+
+:root {
+  --foreground: #16304f;
+  --background: #EEF3F9;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: "Inter", "Noto Sans Arabic", sans-serif;
+}
+
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .gradient-primary {
+    @apply bg-gradient-to-r from-primary-600 to-primary-800;
+  }
+  .gradient-meknes {
+    @apply bg-gradient-to-r from-primary-600 via-primary-500 to-primary-700;
+  }
+  .gradient-gold {
+    @apply bg-gradient-to-r from-accent-400 to-accent-600;
+  }
+  .gradient-hero {
+    background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #10b981 100%);
+  }
+  .card-shadow {
+    @apply shadow-lg hover:shadow-xl transition-shadow duration-300;
+  }
+  .glass {
+    @apply bg-white/80 backdrop-blur-md;
+  }
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  @apply ring-2 ring-primary-400 outline-none;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #d6e4f0;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #059669;
+  border-radius: 3px;
+}

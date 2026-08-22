@@ -1,0 +1,26 @@
+import { BusinessCategory } from "@/types";
+
+export const categoryEmojis: Record<BusinessCategory, string> = {
+  restaurant: "🍽️",
+  cafe: "☕",
+  boulangerie: "🥐",
+  pharmacie: "💊",
+  coiffeur: "✂️",
+  epicerie: "🧺",
+  artisanat: "🔨",
+  dentiste: "😊",
+  clinique: "🏢",
+  medecin: "🩺",
+  avocat: "⚖️",
+  immobilier: "🏠",
+  garage: "🔧",
+  electronique: "📱",
+  vetements: "👕",
+  education: "🎓",
+  sport: "🏋️",
+  beaute: "✨",
+  hotel: "🛏️",
+  droguerie: "🧪",
+  location_voiture: "🚗",
+  autre: "⋯",
+};
