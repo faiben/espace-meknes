@@ -56,6 +56,28 @@ export default function AdminPage() {
   const [businessSearch, setBusinessSearch] = useState("");
   const [artisanSearch, setArtisanSearch] = useState("");
 
+  const filteredBusinesses = useMemo(() => {
+    if (!businessSearch.trim()) return allBusinesses;
+    const q = businessSearch.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return allBusinesses.filter((b) =>
+      b.nameFr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(q) ||
+      b.nameAr.includes(businessSearch) ||
+      b.phone.includes(businessSearch) ||
+      b.category.includes(q)
+    );
+  }, [businessSearch, allBusinesses]);
+
+  const filteredArtisans = useMemo(() => {
+    if (!artisanSearch.trim()) return allArtisans;
+    const q = artisanSearch.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return allArtisans.filter((a) =>
+      a.nameFr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(q) ||
+      a.nameAr.includes(artisanSearch) ||
+      a.phone.includes(artisanSearch) ||
+      a.specialty.includes(q)
+    );
+  }, [artisanSearch, allArtisans]);
+
   if (!user || user.role !== "admin") {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
@@ -79,28 +101,6 @@ export default function AdminPage() {
   const activeArtisans = allArtisans;
   const activeJobs = allJobs;
   const activeAds = allAds;
-
-  const filteredBusinesses = useMemo(() => {
-    if (!businessSearch.trim()) return activeBusinesses;
-    const q = businessSearch.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    return activeBusinesses.filter((b) =>
-      b.nameFr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(q) ||
-      b.nameAr.includes(businessSearch) ||
-      b.phone.includes(businessSearch) ||
-      b.category.includes(q)
-    );
-  }, [businessSearch, activeBusinesses]);
-
-  const filteredArtisans = useMemo(() => {
-    if (!artisanSearch.trim()) return activeArtisans;
-    const q = artisanSearch.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    return activeArtisans.filter((a) =>
-      a.nameFr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(q) ||
-      a.nameAr.includes(artisanSearch) ||
-      a.phone.includes(artisanSearch) ||
-      a.specialty.includes(q)
-    );
-  }, [artisanSearch, activeArtisans]);
 
   const tabs: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
     { key: "overview", label: isArabic ? "نظرة عامة" : "Vue d'ensemble", icon: <BarChart3 size={18} /> },
