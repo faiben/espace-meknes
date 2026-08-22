@@ -45,6 +45,12 @@ export function Header() {
                 {t[link.key as keyof typeof t] as string}
               </Link>
             ))}
+            <Link
+              href="/annuaire/register"
+              className="px-3 py-2 rounded-lg text-sm font-medium bg-accent-400 text-navy-900 hover:bg-accent-300 transition-colors ml-1"
+            >
+              {t.registerBusiness}
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -155,6 +161,13 @@ export function Header() {
                 {t[link.key as keyof typeof t] as string}
               </Link>
             ))}
+            <Link
+              href="/annuaire/register"
+              onClick={() => setMobileOpen(false)}
+              className="block px-3 py-2 rounded-lg text-sm font-medium text-accent-400 hover:bg-white/5"
+            >
+              {t.registerBusiness}
+            </Link>
             {user ? (
               <>
                 <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-lg text-sm font-medium text-emerald-100/70 hover:bg-white/5">

@@ -219,6 +219,34 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* CTA: Register business */}
+      <section className="py-16 bg-gradient-to-br from-primary-700 to-primary-600">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-3xl font-bold text-white mb-3">
+            {isArabic ? "هل أنت تاجر أو صنّاعي في مكناس؟" : "Vous êtes commerçant ou artisan à Meknès ?"}
+          </h2>
+          <p className="text-emerald-100 text-lg mb-8 max-w-xl mx-auto">
+            {isArabic
+              ? "انضم لآلاف التجار واستفد من وصول مئات الزوار يومياً. الخطّة المجانية متاحة!"
+              : "Rejoignez des milliers de commerçants et trouvez des centaines de clients chaque jour. La formule gratuite est disponible !"}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/annuaire/register"
+              className="px-8 py-3 rounded-lg bg-accent-400 text-navy-900 font-bold hover:bg-accent-300 transition-colors text-lg shadow-lg"
+            >
+              {t.registerBusiness}
+            </Link>
+            <Link
+              href="/annuaire"
+              className="px-8 py-3 rounded-lg bg-white/10 text-white border border-white/20 font-medium hover:bg-white/20 transition-colors"
+            >
+              {isArabic ? "تصفح الدulaire" : "Voir l'annuaire"}
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
