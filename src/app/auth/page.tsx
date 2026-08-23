@@ -10,7 +10,7 @@ type AuthMode = "login" | "register";
 
 export default function AuthPage() {
   const { t, isArabic } = useLang();
-  const { user, login, register } = useAuth();
+  const { user, login, register, googleLogin } = useAuth();
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("login");
   const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "", role: "resident" as string });
@@ -51,6 +51,15 @@ export default function AuthPage() {
     { key: "employer", label: t.employer, icon: "🏢" },
   ];
 
+  // Google OAuth login
+  const handleGoogleLogin = async () => {
+    await googleLogin({
+      parameters: {
+        prompt: "select_account",
+      },
+    });
+  };
+
   if (submitted) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
@@ -84,19 +93,28 @@ export default function AuthPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-emerald-100 card-shadow p-6">
-          <div className="flex bg-navy-50 rounded-lg p-1 mb-6">
+<div className="flex bg-navy-50 rounded-lg p-1 mb-6">
             <button
-              onClick={() => { setMode("login"); setError(""); }}
-              className={clsx("flex-1 py-2 rounded-md text-sm font-medium transition-colors", mode === "login" ? "bg-white text-navy-800 shadow" : "text-navy-500")}
-            >
-              {t.login}
-            </button>
-            <button
-              onClick={() => { setMode("register"); setError(""); }}
-              className={clsx("flex-1 py-2 rounded-md text-sm font-medium transition-colors", mode === "register" ? "bg-white text-navy-800 shadow" : "text-navy-500")}
-            >
-              {t.register}
-            </button>
+              onClick={() => handleGoogleLogin()}
+              className="flex-1 py-2 rounded-md text-sm font-medium transition-colors text-white bg-red-500 hover:bg-red-600 shadow">
+                <img src="https://ssl.gstatic.com/images/branding/google/apps/monochrome_dark/24dp/google%20logo.svg" alt="Google" className="mr-2 h-5 w-auto" />
+                {isArabic ? "استمرار بحساب جوجل" : "Continue with Google"}
+              </button>
+            </div>
+            <div>
+              <button
+                onClick={() => setMode("login")}
+                className="flex-1 py-2 rounded-md text-sm font-medium transition-colors text-navy-800 hover:bg-white/20"
+              >
+                {isArabic ? "تسجيل الدخول بحساب جديد" : "Login with new account"}
+              </button>
+              <button
+                onClick={() => setMode("register")}
+                className="flex-1 py-2 rounded-md text-sm font-medium transition-colors text-navy-800 hover:bg-white/20"
+              >
+                {isArabic ? "إنشاء حساب" : "Register"}
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -176,7 +194,7 @@ export default function AuthPage() {
             </button>
           </form>
 
-          {mode === "login" && (
+{mode === "login" && (
             <div className="mt-4 p-3 rounded-lg bg-navy-50 text-xs text-navy-500">
               <p className="font-medium text-navy-700 mb-1">
                 {isArabic ? "حساب المدير الافتراضي:" : "Compte admin par défaut :"}
@@ -184,14 +202,25 @@ export default function AuthPage() {
               <p>Email: <span className="font-mono text-primary-600">admin@espace-meknes.ma</span></p>
               <p>Mot de passe: <span className="font-mono text-primary-600">admin123</span></p>
             </div>
+            <div className="mt-4 text-sm text-navy-500">
+              {isArabic ? "هل نسيت كلمة المرور؟" : "Mot de passe oublié?"}
+              <a
+                href="https://fmxchegxgxsyngycvgyk.supabase.co/auth/v1/verify?type=recovery"
+                className="text-primary-600 underline hover:text-primary-700"
+                target="_blank"
+              >
+                {isArabic ? "إعادة تعيين كلمة المرور" : "Password reset"}
+              </a>
+            </div>
           )}
-
-          <div className="text-center mt-4 text-sm text-navy-500">
-            {mode === "login" ? t.noAccount : t.hasAccount}{" "}
-            <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }} className="text-primary-600 font-medium hover:text-primary-700">
-              {mode === "login" ? t.register : t.login}
-            </button>
-          </div>
+          {mode === "login" && (
+            <div className="text-center mt-4 text-sm text-navy-500">
+              {isArabic ? "لا تملك حساباً؟" : "Pas de compte?"}
+              <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }} className="text-primary-600 font-medium hover:text-primary-700">
+                {isArabic ? "إنشاء حساب" : "Inscription"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

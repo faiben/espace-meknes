@@ -10,6 +10,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   register: (name: string, email: string, password: string, role: UserRole) => Promise<{ ok: boolean; error?: string }>;
+  googleLogin: () => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   toggleFavorite: (id: string) => void;
   isFavorite: (id: string) => boolean;
@@ -96,6 +97,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string, role: UserRole): Promise<{ ok: boolean; error?: string }> => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) return { ok: false, error: error.message.includes("already") ? "Cet email est déjà utilisé" : error.message };
+    if (!data.user) return { ok: false, error: "Erreur lors de l'inscription" };
+
+    await supabase.from("user_profiles").upsert({
+      id: data.user.id,
+      name,
+      email,
+      role,
+      favorites: [],
+      created_at: new Date().toISOString(),
+    });
+
+    setUser({ id: data.user.id, name, email, role, favorites: [], createdAt: new Date().toISOString() });
+    return { ok: true };
+  }, []);
+
+  const googleLogin = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  }, []);
+
+  const logout = useCallback(async () => {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return { ok: false, error: error.message.includes("already") ? "Cet email est déjà utilisé" : error.message };
     if (!data.user) return { ok: false, error: "Erreur lors de l'inscription" };
