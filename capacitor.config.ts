@@ -6,6 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'out',
   server: {
     androidScheme: 'https',
+    url: 'https://espacemeknes.netlify.app',
     cleartext: true,
   },
   plugins: {
