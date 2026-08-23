@@ -9,6 +9,12 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        try {
+            WebView webView = getBridge().getWebView();
+            if (webView != null) {
+                webView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+            }
+        } catch (Exception ignored) {}
     }
 
     @Override
@@ -17,8 +23,7 @@ public class MainActivity extends BridgeActivity {
         try {
             WebView webView = getBridge().getWebView();
             if (webView != null) {
-                webView.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
-                webView.clearCache(false);
+                webView.clearCache(true);
             }
         } catch (Exception ignored) {}
     }
