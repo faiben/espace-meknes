@@ -754,6 +754,67 @@ export default function AdminPage() {
                     <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings.adsEnabled ? "left-6" : "left-0.5"}`} />
                   </button>
                 </div>
+
+                <div className="border-t border-emerald-100 pt-6 mt-6">
+                  <h3 className="font-bold text-navy-800 mb-4">
+                    {isArabic ? "معلومات الحساب البنكي" : "Coordonnées bancaires"}
+                  </h3>
+                  <p className="text-xs text-navy-500 mb-4">
+                    {isArabic
+                      ? "تُستخدم هذه المعلومات لعرضها للمستخدمين عند اختيار الدفع بالتحويل البنكي"
+                      : "Affichées aux utilisateurs lors du choix du paiement par virement bancaire"}
+                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-navy-700 mb-1">
+                        {isArabic ? "اسم البنك" : "Nom de la banque"}
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.bankName}
+                        onChange={(e) => updateSettings({ bankName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white text-navy-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder={isArabic ? "البنك المغربي للتجارة الخارجية" : "BMCE, Attijariwafa, etc."}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-navy-700 mb-1">
+                        {isArabic ? "اسم صاحب الحساب" : "Titulaire du compte"}
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.bankAccountHolder}
+                        onChange={(e) => updateSettings({ bankAccountHolder: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white text-navy-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder={isArabic ? "محمد أمين بن علي" : "Mohamed Amine Ben Ali"}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-navy-700 mb-1">
+                        {isArabic ? "رقم الحساب (IBAN)" : "IBAN"}
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.bankIban}
+                        onChange={(e) => updateSettings({ bankIban: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white text-navy-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="MA64 0115 1900 0001 2345 6789 01"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-navy-700 mb-1">
+                        {isArabic ? "الشيكل الرمزي (RIB)" : "RIB"}
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.bankRib}
+                        onChange={(e) => updateSettings({ bankRib: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white text-navy-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="011 780 0001 234567890101 85"
+                      />
+                    </div>
+                  </div>
+                </div>
                 <button
                   onClick={() => { setSettingsSaved(true); setTimeout(() => setSettingsSaved(false), 2000); }}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"

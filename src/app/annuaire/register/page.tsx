@@ -5,14 +5,16 @@ import { useRouter } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusinessStore } from "@/hooks/useBusinessStore";
-import { BusinessCategory, PackageType } from "@/types";
+import { useAppSettings } from "@/hooks/useAppSettings";
+import { BusinessCategory, PackageType, PaymentMethod } from "@/types";
 import { areas } from "@/data";
 import {
   CheckCircle, Zap, Crown, ArrowLeft, Store, ChevronDown,
+  Banknote, CreditCard, Building2,
 } from "lucide-react";
 import clsx from "clsx";
 
-type Step = "plan" | "account" | "details" | "done";
+type Step = "plan" | "account" | "details" | "payment" | "done";
 
 const categoryOptions: BusinessCategory[] = [
   "restaurant", "cafe", "boulangerie", "pharmacie", "coiffeur", "epicerie",
@@ -112,10 +114,12 @@ export default function BusinessRegisterPage() {
   const { t, isArabic } = useLang();
   const { user, register } = useAuth();
   const { addBusiness } = useBusinessStore();
+  const { settings } = useAppSettings();
   const router = useRouter();
 
   const [step, setStep] = useState<Step>("plan");
   const [selectedPlan, setSelectedPlan] = useState<PackageType>("free");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [error, setError] = useState("");
 
   const [account, setAccount] = useState({
@@ -193,6 +197,14 @@ export default function BusinessRegisterPage() {
       return;
     }
 
+    if (selectedPlan === "free") {
+      submitBusiness("cash");
+    } else {
+      setStep("payment");
+    }
+  }
+
+  function submitBusiness(method: PaymentMethod) {
     const newBusiness = {
       id: `biz-${Date.now()}`,
       nameFr: form.nameFr.trim(),
@@ -212,6 +224,7 @@ export default function BusinessRegisterPage() {
       reviewCount: 0,
       isSponsored: selectedPlan === "premium",
       packageType: selectedPlan,
+      paymentMethod: method,
       createdAt: new Date().toISOString().split("T")[0],
       userId: user?.id,
     };
@@ -598,6 +611,202 @@ export default function BusinessRegisterPage() {
                   {isArabic ? "نشر المتجر" : "Publier mon commerce"}
                 </button>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Step: Payment */}
+        {step === "payment" && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-2xl border border-emerald-100 p-6 mb-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className={clsx("w-10 h-10 rounded-xl flex items-center justify-center", plan.iconBg)}>
+                  <plan.icon size={20} />
+                </div>
+                <div>
+                  <p className="text-sm text-navy-500">{isArabic ? "الخطّة المختارة" : "Formule choisie"}</p>
+                  <p className="font-bold text-navy-800">
+                    {isArabic ? plan.label.ar : plan.label.fr}
+                    <span className="text-primary-600 ml-1">{plan.price} DH/{isArabic ? "شهر" : "mois"}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-emerald-100 p-6">
+              <h2 className="text-xl font-bold text-navy-800 mb-2 text-center">
+                {isArabic ? "اختر طريقة الدفع" : "Choisissez votre mode de paiement"}
+              </h2>
+              <p className="text-sm text-navy-500 text-center mb-6">
+                {isArabic ? "يمكنك تغيير طريقة الدفع لاحقاً من لوحة التحكم" : "Vous pourrez modifier le mode de paiement depuis votre tableau de bord"}
+              </p>
+
+              <div className="space-y-3 mb-6">
+                {/* Cash */}
+                <button
+                  onClick={() => setPaymentMethod("cash")}
+                  className={clsx(
+                    "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                    paymentMethod === "cash"
+                      ? "border-primary-500 bg-primary-50"
+                      : "border-gray-200 hover:border-primary-300"
+                  )}
+                >
+                  <div className={clsx(
+                    "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                    paymentMethod === "cash" ? "bg-primary-100 text-primary-600" : "bg-navy-100 text-navy-500"
+                  )}>
+                    <Banknote size={24} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-navy-800">{isArabic ? "الدفع نقداً" : "Paiement en espèces"}</p>
+                    <p className="text-sm text-navy-500">
+                      {isArabic ? "ادفع نقداً عند لقاء الممثل أو عبر التحويل" : "Payez en espèces lors de la rencontre ou par virement"}
+                    </p>
+                  </div>
+                  <div className={clsx(
+                    "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
+                    paymentMethod === "cash" ? "border-primary-500" : "border-gray-300"
+                  )}>
+                    {paymentMethod === "cash" && <div className="w-2.5 h-2.5 rounded-full bg-primary-500" />}
+                  </div>
+                </button>
+
+                {/* Credit Card */}
+                <button
+                  onClick={() => setPaymentMethod("credit_card")}
+                  className={clsx(
+                    "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                    paymentMethod === "credit_card"
+                      ? "border-primary-500 bg-primary-50"
+                      : "border-gray-200 hover:border-primary-300"
+                  )}
+                >
+                  <div className={clsx(
+                    "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                    paymentMethod === "credit_card" ? "bg-primary-100 text-primary-600" : "bg-navy-100 text-navy-500"
+                  )}>
+                    <CreditCard size={24} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-navy-800">{isArabic ? "بطاقة الائتمان" : "Carte bancaire"}</p>
+                    <p className="text-sm text-navy-500">
+                      {isArabic ? "الدفع بالبطاقة الائتمانية (قريباً)" : "Paiement par carte bancaire (bientôt disponible)"}
+                    </p>
+                    <span className="inline-block mt-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                      {isArabic ? "قريباً" : "Coming soon"}
+                    </span>
+                  </div>
+                  <div className={clsx(
+                    "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
+                    paymentMethod === "credit_card" ? "border-primary-500" : "border-gray-300"
+                  )}>
+                    {paymentMethod === "credit_card" && <div className="w-2.5 h-2.5 rounded-full bg-primary-500" />}
+                  </div>
+                </button>
+
+                {/* Bank Transfer */}
+                <button
+                  onClick={() => setPaymentMethod("bank_transfer")}
+                  className={clsx(
+                    "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                    paymentMethod === "bank_transfer"
+                      ? "border-primary-500 bg-primary-50"
+                      : "border-gray-200 hover:border-primary-300"
+                  )}
+                >
+                  <div className={clsx(
+                    "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                    paymentMethod === "bank_transfer" ? "bg-primary-100 text-primary-600" : "bg-navy-100 text-navy-500"
+                  )}>
+                    <Building2 size={24} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-navy-800">{isArabic ? "التحويل البنكي" : "Virement bancaire"}</p>
+                    <p className="text-sm text-navy-500">
+                      {isArabic ? "قم بالتحويل إلى حسابنا البنكي" : "Effectuez un virement vers notre compte bancaire"}
+                    </p>
+                  </div>
+                  <div className={clsx(
+                    "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
+                    paymentMethod === "bank_transfer" ? "border-primary-500" : "border-gray-300"
+                  )}>
+                    {paymentMethod === "bank_transfer" && <div className="w-2.5 h-2.5 rounded-full bg-primary-500" />}
+                  </div>
+                </button>
+              </div>
+
+              {/* Bank details when bank_transfer selected */}
+              {paymentMethod === "bank_transfer" && settings.bankName && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                  <h4 className="font-bold text-navy-800 mb-3 text-sm">
+                    {isArabic ? "معلومات التحويل البنكي" : "Coordonnées bancaires"}
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    {settings.bankName && (
+                      <div className="flex justify-between">
+                        <span className="text-navy-500">{isArabic ? "البنك" : "Banque"}</span>
+                        <span className="font-medium text-navy-800">{settings.bankName}</span>
+                      </div>
+                    )}
+                    {settings.bankAccountHolder && (
+                      <div className="flex justify-between">
+                        <span className="text-navy-500">{isArabic ? "صاحب الحساب" : "Titulaire"}</span>
+                        <span className="font-medium text-navy-800">{settings.bankAccountHolder}</span>
+                      </div>
+                    )}
+                    {settings.bankIban && (
+                      <div className="flex justify-between">
+                        <span className="text-navy-500">IBAN</span>
+                        <span className="font-medium text-navy-800">{settings.bankIban}</span>
+                      </div>
+                    )}
+                    {settings.bankRib && (
+                      <div className="flex justify-between">
+                        <span className="text-navy-500">RIB</span>
+                        <span className="font-medium text-navy-800">{settings.bankRib}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {paymentMethod === "bank_transfer" && !settings.bankName && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-700">
+                  {isArabic
+                    ? "⚠️ لم يتم تكوين معلومات الحساب البنكي بعد. يرجى الاتصال بالإدارة."
+                    : "⚠️ Les coordonnées bancaires n'ont pas encore été configurées. Veuillez contacter l'administration."}
+                </div>
+              )}
+
+              {paymentMethod === "credit_card" && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-700">
+                  {isArabic
+                    ? "💳 الدفع بالبطاقة الائتمان غير متاح بعد. يرجى اختيار طريقة أخرى."
+                    : "💳 Le paiement par carte bancaire n'est pas encore disponible. Veuillez choisir un autre mode."}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep("details")}
+                  className="flex-1 py-3 rounded-lg bg-navy-50 text-navy-700 font-medium hover:bg-navy-100 transition-colors"
+                >
+                  {isArabic ? "رجوع" : "Retour"}
+                </button>
+                <button
+                  onClick={() => submitBusiness(paymentMethod)}
+                  disabled={paymentMethod === "credit_card"}
+                  className={clsx(
+                    "flex-[2] py-3 rounded-lg font-medium transition-colors text-lg",
+                    paymentMethod === "credit_card"
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : "bg-primary-600 text-white hover:bg-primary-700"
+                  )}
+                >
+                  {isArabic ? "تأكيد ونشر المتجر" : "Confirmer et publier"}
+                </button>
+              </div>
             </div>
           </div>
         )}

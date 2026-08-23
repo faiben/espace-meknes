@@ -8,6 +8,10 @@ const DEFAULTS: AppSettings = {
   whatsappNumber: "+212600000000",
   supportEmail: "admin@espace-meknes.ma",
   adsEnabled: true,
+  bankName: "",
+  bankAccountHolder: "",
+  bankIban: "",
+  bankRib: "",
 };
 
 export function useAppSettings() {
@@ -24,6 +28,10 @@ export function useAppSettings() {
           whatsappNumber: data.whatsapp_number || DEFAULTS.whatsappNumber,
           supportEmail: data.support_email || DEFAULTS.supportEmail,
           adsEnabled: data.ads_enabled ?? DEFAULTS.adsEnabled,
+          bankName: data.bank_name || DEFAULTS.bankName,
+          bankAccountHolder: data.bank_account_holder || DEFAULTS.bankAccountHolder,
+          bankIban: data.bank_iban || DEFAULTS.bankIban,
+          bankRib: data.bank_rib || DEFAULTS.bankRib,
         });
       }
       setLoaded(true);
@@ -38,6 +46,10 @@ export function useAppSettings() {
       whatsapp_number: next.whatsappNumber,
       support_email: next.supportEmail,
       ads_enabled: next.adsEnabled,
+      bank_name: next.bankName,
+      bank_account_holder: next.bankAccountHolder,
+      bank_iban: next.bankIban,
+      bank_rib: next.bankRib,
     }, { onConflict: "id" });
   }, []);
 

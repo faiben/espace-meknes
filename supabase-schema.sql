@@ -25,6 +25,7 @@ create table if not exists businesses (
   review_count integer default 0,
   is_sponsored boolean default false,
   package_type text default 'free',
+  payment_method text default '',
   created_at text default '',
   user_id text default ''
 );
@@ -89,7 +90,8 @@ create table if not exists ads (
   starts_at text default '',
   expires_at text default '',
   impressions integer default 0,
-  clicks integer default 0
+  clicks integer default 0,
+  payment_method text default ''
 );
 
 -- RATINGS
@@ -141,7 +143,11 @@ create table if not exists app_settings (
   id text primary key default 'main',
   whatsapp_number text default '+212600000000',
   support_email text default 'admin@espace-meknes.ma',
-  ads_enabled boolean default true
+  ads_enabled boolean default true,
+  bank_name text default '',
+  bank_account_holder text default '',
+  bank_iban text default '',
+  bank_rib text default ''
 );
 
 insert into app_settings (id) values ('main') on conflict (id) do nothing;

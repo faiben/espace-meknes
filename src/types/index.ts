@@ -58,6 +58,8 @@ export type JobSector =
 
 export type PackageType = "free" | "pro" | "premium";
 
+export type PaymentMethod = "cash" | "credit_card" | "bank_transfer";
+
 export type UserRole = "resident" | "merchant" | "artisan" | "jobseeker" | "employer" | "admin";
 
 export type AdStatus = "pending" | "approved" | "rejected" | "expired";
@@ -94,6 +96,7 @@ export interface Business {
   reviewCount: number;
   isSponsored: boolean;
   packageType: PackageType;
+  paymentMethod?: PaymentMethod;
   createdAt: string;
   userId?: string;
 }
@@ -200,6 +203,7 @@ export interface Ad {
   expiresAt: string;
   impressions: number;
   clicks: number;
+  paymentMethod?: PaymentMethod;
 }
 
 export interface FaqArticle {
@@ -250,4 +254,8 @@ export interface AppSettings {
   whatsappNumber: string;
   supportEmail: string;
   adsEnabled: boolean;
+  bankName: string;
+  bankAccountHolder: string;
+  bankIban: string;
+  bankRib: string;
 }

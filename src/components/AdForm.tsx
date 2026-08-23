@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useLang } from "@/contexts/LanguageContext";
-import { Ad } from "@/types";
+import { Ad, PaymentMethod } from "@/types";
 import { X } from "lucide-react";
+import clsx from "clsx";
 
 interface AdFormProps {
   ad?: Ad | null;
@@ -23,6 +24,7 @@ export function AdForm({ ad, onSave, onClose }: AdFormProps) {
   const [startsAt, setStartsAt] = useState(ad?.startsAt ?? new Date().toISOString().split("T")[0]);
   const [expiresAt, setExpiresAt] = useState(ad?.expiresAt ?? "");
   const [status, setStatus] = useState<"pending" | "approved" | "rejected" | "expired">(ad?.status ?? "pending");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(ad?.paymentMethod ?? "cash");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +42,7 @@ export function AdForm({ ad, onSave, onClose }: AdFormProps) {
       expiresAt,
       impressions: ad?.impressions ?? 0,
       clicks: ad?.clicks ?? 0,
+      paymentMethod,
     });
   };
 
@@ -81,7 +84,7 @@ export function AdForm({ ad, onSave, onClose }: AdFormProps) {
               <input type="email" value={advertiserEmail} onChange={(e) => setAdvertiserEmail(e.target.value)} required className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white text-navy-800 focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-navy-700 mb-1">{isArabic ? "الموضع" : "Position"}</label>
               <select value={position} onChange={(e) => setPosition(e.target.value as typeof position)} className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white">
@@ -96,6 +99,14 @@ export function AdForm({ ad, onSave, onClose }: AdFormProps) {
                 <option value="pending">{isArabic ? "قيد المراجعة" : "En attente"}</option>
                 <option value="approved">{isArabic ? "مقبول" : "Approuvé"}</option>
                 <option value="rejected">{isArabic ? "مرفوض" : "Rejeté"}</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-navy-700 mb-1">{isArabic ? "طريقة الدفع" : "Paiement"}</label>
+              <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)} className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white">
+                <option value="cash">{isArabic ? "نقداً" : "Espèces"}</option>
+                <option value="credit_card">{isArabic ? "بطاقة" : "CB"}</option>
+                <option value="bank_transfer">{isArabic ? "تحويل" : "Virement"}</option>
               </select>
             </div>
           </div>
