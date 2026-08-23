@@ -23,6 +23,22 @@ function getDeviceId(): string {
   return id;
 }
 
+function toCamel(obj: Record<string, unknown>): Rating {
+  const r: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    r[k.replace(/_([a-z])/g, (_: string, c: string) => c.toUpperCase())] = v;
+  }
+  return r as unknown as Rating;
+}
+
+function toSnake(obj: Record<string, unknown>): Record<string, unknown> {
+  const r: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    r[k.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase())] = v;
+  }
+  return r;
+}
+
 export function useRatingStore() {
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -30,7 +46,7 @@ export function useRatingStore() {
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from("ratings").select("*");
-      if (data) setRatings(data as Rating[]);
+      if (data) setRatings(data.map(toCamel));
       setLoaded(true);
     })();
   }, []);
@@ -44,7 +60,7 @@ export function useRatingStore() {
       userName: rating.userName || deviceId.slice(0, 8),
     };
     setRatings((prev) => [newRating, ...prev]);
-    await supabase.from("ratings").upsert(newRating);
+    await supabase.from("ratings").upsert(toSnake(newRating as unknown as Record<string, unknown>));
     return newRating;
   }, []);
 

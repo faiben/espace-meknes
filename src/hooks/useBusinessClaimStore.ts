@@ -4,6 +4,22 @@ import { useState, useEffect, useCallback } from "react";
 import { BusinessClaim } from "@/types";
 import { supabase } from "@/lib/supabase";
 
+function toCamel(obj: Record<string, unknown>): BusinessClaim {
+  const r: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    r[k.replace(/_([a-z])/g, (_: string, c: string) => c.toUpperCase())] = v;
+  }
+  return r as unknown as BusinessClaim;
+}
+
+function toSnake(obj: Record<string, unknown>): Record<string, unknown> {
+  const r: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    r[k.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase())] = v;
+  }
+  return r;
+}
+
 export function useBusinessClaimStore() {
   const [claims, setClaims] = useState<BusinessClaim[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -11,7 +27,7 @@ export function useBusinessClaimStore() {
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from("business_claims").select("*");
-      if (data) setClaims(data as BusinessClaim[]);
+      if (data) setClaims(data.map(toCamel));
       setLoaded(true);
     })();
   }, []);
@@ -24,13 +40,13 @@ export function useBusinessClaimStore() {
       createdAt: new Date().toISOString(),
     };
     setClaims((prev) => [newClaim, ...prev]);
-    await supabase.from("business_claims").upsert(newClaim);
+    await supabase.from("business_claims").upsert(toSnake(newClaim as unknown as Record<string, unknown>));
     return newClaim;
   }, []);
 
   const updateClaim = useCallback(async (updated: BusinessClaim) => {
     setClaims((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-    await supabase.from("business_claims").upsert(updated);
+    await supabase.from("business_claims").upsert(toSnake(updated as unknown as Record<string, unknown>));
   }, []);
 
   const deleteClaim = useCallback(async (id: string) => {
