@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { AppSettings } from "@/types";
 import { supabase } from "@/lib/supabase";
 
@@ -13,6 +13,8 @@ const DEFAULTS: AppSettings = {
 export function useAppSettings() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULTS);
   const [loaded, setLoaded] = useState(false);
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
   useEffect(() => {
     (async () => {
@@ -29,16 +31,14 @@ export function useAppSettings() {
   }, []);
 
   const updateSettings = useCallback(async (updates: Partial<AppSettings>) => {
-    setSettings((prev) => {
-      const next = { ...prev, ...updates };
-      supabase.from("app_settings").upsert({
-        id: "main",
-        whatsapp_number: next.whatsappNumber,
-        support_email: next.supportEmail,
-        ads_enabled: next.adsEnabled,
-      });
-      return next;
-    });
+    const next = { ...settingsRef.current, ...updates };
+    setSettings(next);
+    await supabase.from("app_settings").upsert({
+      id: "main",
+      whatsapp_number: next.whatsappNumber,
+      support_email: next.supportEmail,
+      ads_enabled: next.adsEnabled,
+    }, { onConflict: "id" });
   }, []);
 
   return { settings, updateSettings, loaded };
