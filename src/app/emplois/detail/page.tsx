@@ -1,17 +1,18 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useJobStore } from "@/hooks/useJobStore";
 import { getAreaName } from "@/utils/search";
 import { MapPin, Clock, Building2, Banknote, Users, ArrowLeft, Share2, Briefcase, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
-export default function JobDetailPage() {
+function JobDetailContent() {
   const { t, isArabic } = useLang();
-  const params = useParams();
+  const searchParams = useSearchParams();
   const { allJobs } = useJobStore();
-  const job = allJobs.find((j) => j.id === params.id);
+  const job = allJobs.find((j) => j.id === searchParams.get("id"));
 
   if (!job) {
     return (
@@ -153,5 +154,13 @@ export default function JobDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function JobDetailPage() {
+  return (
+    <Suspense fallback={<div className="max-w-4xl mx-auto px-4 py-16 text-center text-navy-500">Loading...</div>}>
+      <JobDetailContent />
+    </Suspense>
   );
 }

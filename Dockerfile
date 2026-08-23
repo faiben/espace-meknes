@@ -16,10 +16,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+RUN npm install -g serve
+COPY --from=builder /app/out ./out
 USER nextjs
 EXPOSE 3001
-ENV PORT=3001
-CMD ["node", "server.js"]
+CMD ["serve", "out", "-l", "3001"]

@@ -56,7 +56,7 @@ export function BusinessCard({ business }: BusinessCardProps) {
           <button
             onClick={(e) => {
               e.preventDefault();
-              const url = `${window.location.origin}/annuaire/${business.id}`;
+              const url = `${window.location.origin}/annuaire/detail?id=${business.id}`;
               if (navigator.share) {
                 navigator.share({ title: isArabic ? business.nameAr : business.nameFr, url });
               } else {
@@ -127,7 +127,7 @@ export function BusinessCard({ business }: BusinessCardProps) {
             </a>
           )}
           <Link
-            href={`/annuaire/${business.id}`}
+            href={`/annuaire/detail?id=${business.id}`}
             className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-navy-50 text-navy-600 text-xs font-medium hover:bg-navy-100 transition-colors"
           >
             {t.viewDetails}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useArtisanRequestStore } from "@/hooks/useArtisanRequestStore";
@@ -15,10 +15,10 @@ import { MapPin, Star, ArrowLeft, Heart, Share2, CheckCircle, Shield, Send, Mess
 import Link from "next/link";
 
 function ArtisanDetailContent() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const { t, isArabic } = useLang();
   const { allArtisans } = useArtisanStore();
-  const artisan = allArtisans.find((a) => a.id === params.id);
+  const artisan = allArtisans.find((a) => a.id === searchParams.get("id"));
   const { addRequest } = useArtisanRequestStore();
   const { settings } = useAppSettings();
   const { addRating, getArtisanRatings, getArtisanAverage, hasUserRatedArtisan } = useRatingStore();

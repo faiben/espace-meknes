@@ -56,7 +56,7 @@ export function ArtisanCard({ artisan }: ArtisanCardProps) {
 
         <div className="flex gap-2 mt-4">
           <a
-            href={`/artisans/${artisan.id}`}
+            href={`/artisans/detail?id=${artisan.id}`}
             className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-50 text-primary-700 text-xs font-medium hover:bg-primary-100 transition-colors"
           >
             {t.viewDetails}

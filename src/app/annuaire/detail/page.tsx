@@ -1,7 +1,7 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useBusinessStore } from "@/hooks/useBusinessStore";
 import { useRatingStore } from "@/hooks/useRatingStore";
@@ -17,14 +17,14 @@ import dynamic from "next/dynamic";
 
 const BusinessMap = dynamic(() => import("@/components/BusinessMap").then((m) => m.BusinessMap), { ssr: false });
 
-export default function BusinessDetailPage() {
+function BusinessDetailContent() {
   const { t, isArabic } = useLang();
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { allBusinesses } = useBusinessStore();
   const { addRating, getBusinessRatings, getBusinessAverage, hasUserRated } = useRatingStore();
   const { user, toggleFavorite, isFavorite } = useAuth();
-  const business = allBusinesses.find((b) => b.id === params.id);
+  const business = allBusinesses.find((b) => b.id === searchParams.get("id"));
   const [imgIndex, setImgIndex] = useState(0);
   const [reviewStars, setReviewStars] = useState(0);
   const [reviewName, setReviewName] = useState("");
@@ -356,5 +356,13 @@ export default function BusinessDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BusinessDetailPage() {
+  return (
+    <Suspense fallback={<div className="max-w-7xl mx-auto px-4 py-16 text-center text-navy-500">Loading...</div>}>
+      <BusinessDetailContent />
+    </Suspense>
   );
 }
