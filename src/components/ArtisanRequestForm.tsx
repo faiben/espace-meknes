@@ -10,7 +10,7 @@ import { X, Send, CheckCircle } from "lucide-react";
 
 interface ArtisanRequestFormProps {
   artisan: ArtisanProfile;
-  onSave: (req: ArtisanRequest) => void;
+  onSave: (req: ArtisanRequest) => Promise<void> | void;
   onClose: () => void;
 }
 
@@ -18,6 +18,7 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
   const { t, isArabic } = useLang();
   const { settings } = useAppSettings();
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     userName: "",
     userPhone: "",
@@ -26,24 +27,32 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
     descriptionAr: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     const now = new Date().toISOString();
-    onSave({
-      id: `ar${Date.now()}`,
-      artisanId: artisan.id,
-      artisanName: isArabic ? artisan.nameAr : artisan.nameFr,
-      userName: form.userName,
-      userPhone: form.userPhone,
-      userEmail: form.userEmail,
-      descriptionFr: form.descriptionFr,
-      descriptionAr: form.descriptionAr,
-      specialty: artisan.specialty,
-      areaId: artisan.areaId,
-      status: "pending",
-      contactedArtisans: [artisan.id],
-      createdAt: now,
-    });
+    try {
+      await onSave({
+        id: `ar${Date.now()}`,
+        artisanId: artisan.id,
+        artisanName: isArabic ? artisan.nameAr : artisan.nameFr,
+        userName: form.userName,
+        userPhone: form.userPhone,
+        userEmail: form.userEmail,
+        descriptionFr: form.descriptionFr,
+        descriptionAr: form.descriptionAr,
+        specialty: artisan.specialty,
+        areaId: artisan.areaId,
+        status: "pending",
+        contactedArtisans: [artisan.id],
+        notes: "",
+        createdAt: now,
+      });
+    } catch (err: any) {
+      console.error("Save failed:", err);
+      setError(err?.message || "Erreur lors de l'enregistrement");
+      return;
+    }
     setSent(true);
     if (settings.supportEmail) {
       sendArtisanRequestEmail(settings.supportEmail, {
@@ -94,6 +103,9 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
+          )}
           {/* Artisan info */}
           <div className="flex items-center gap-3 p-3 bg-primary-50 rounded-xl">
             <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-xl">

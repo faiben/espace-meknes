@@ -222,7 +222,7 @@ function ArtisanDetailContent() {
       {formOpen && (
         <ArtisanRequestForm
           artisan={artisan}
-          onSave={(req) => { addRequest(req); setFormOpen(false); }}
+          onSave={async (req) => { await addRequest(req); setFormOpen(false); }}
           onClose={() => setFormOpen(false)}
         />
       )}
