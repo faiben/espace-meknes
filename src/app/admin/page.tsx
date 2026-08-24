@@ -455,7 +455,7 @@ export default function AdminPage() {
                         </p>
                         <p className="text-sm text-navy-600 mb-1">{isArabic ? req.descriptionAr : req.descriptionFr}</p>
                         <p className="text-xs text-navy-400">
-                          {isArabic ? "التخصص" : "Spécialité"}: {t.specialties[req.specialty]}
+                          {isArabic ? "التخصص" : "Spécialité"}: {t.specialties[req.specialty] || req.specialty}
                           {req.contactedArtisans.length > 1 && (
                             <span className="ml-2 text-orange-500">
                               · {isArabic ? "تم الاتصال بـ" : "Contacté"} {req.contactedArtisans.length} {isArabic ? "حرفيين" : "artisans"}
