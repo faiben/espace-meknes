@@ -34,13 +34,12 @@ export function useArtisanRequestStore() {
 
   const addRequest = useCallback(async (req: ArtisanRequest) => {
     const snake = toSnake(req as unknown as Record<string, unknown>);
-    console.log("Saving artisan request:", snake);
     const { data, error } = await supabase.from("artisan_requests").upsert(snake).select();
     if (error) {
-      console.error("Failed to save artisan request:", error.message, error.details, error.hint);
+      alert("Supabase error: " + error.message + "\nDetails: " + error.details + "\nHint: " + error.hint);
       throw new Error(error.message);
     }
-    console.log("Artisan request saved:", data);
+    alert("Saved OK! Rows: " + JSON.stringify(data?.length ?? 0));
     setRequests((prev) => [req, ...prev]);
   }, []);
 
