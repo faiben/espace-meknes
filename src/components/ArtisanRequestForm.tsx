@@ -58,13 +58,6 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
       }
       setLoading(false);
       setSent(true);
-      const phone = settings.whatsappNumber.replace(/[^0-9]/g, "");
-      const msg = encodeURIComponent(
-        isArabic
-          ? `طلب حرفي:\nالاسم: ${form.userName}\nالهاتف: ${form.userPhone}\nالحرفي: ${artisan.nameAr}\nالتخصص: ${t.specialties[artisan.specialty]}\nالوصف: ${form.descriptionAr}`
-          : `Demande artisan:\nNom: ${form.userName}\nTél: ${form.userPhone}\nArtisan: ${artisan.nameFr}\nSpécialité: ${t.specialties[artisan.specialty]}\nDescription: ${form.descriptionFr}`
-      );
-      window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
     } catch (err: any) {
       setError(err?.message || "Erreur");
       setLoading(false);
