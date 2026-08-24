@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { sendContactEmail } from "@/lib/email";
 import { faqArticles } from "@/data";
 import { Mail, Send, CheckCircle, ChevronDown, ChevronUp, HelpCircle, MessageSquare, AlertCircle, Lightbulb, Handshake } from "lucide-react";
 import clsx from "clsx";
@@ -23,6 +24,8 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const emailTarget = settings.supportEmail || "support@espacemeknes.ma";
+    await sendContactEmail(emailTarget, form);
     const phone = settings.whatsappNumber.replace(/[^0-9]/g, "");
     const categoryLabels: Record<string, string> = {
       generalQuestion: "Question générale",
