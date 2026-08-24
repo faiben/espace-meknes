@@ -660,7 +660,7 @@ export default function AdminPage() {
                           <span className="text-xs text-navy-500">{msg.email}</span>
                         </div>
                         <p className="text-xs text-navy-400 mb-1">
-                          {msg.category && <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[11px] mr-1">{msg.category}</span>}
+                          {msg.category && <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[11px] mr-1">{({ generalQuestion: "Question générale", reportIssue: "Signaler un problème", suggestion: "Suggestion", partnership: "Partenariat" } as Record<string, string>)[msg.category] || msg.category}</span>}
                           {msg.subject}
                         </p>
                         <p className="text-sm text-navy-600">{msg.message}</p>
