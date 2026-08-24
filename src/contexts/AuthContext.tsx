@@ -38,12 +38,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (!profile) {
-      const { data: inserted } = await supabase
+      const { data: existingByEmail } = await supabase
         .from("user_profiles")
-        .upsert({ id, name, email, role: "resident", favorites: [], created_at: new Date().toISOString() })
-        .select()
+        .select("*")
+        .eq("email", email)
         .single();
-      profile = inserted;
+
+      if (existingByEmail) {
+        profile = existingByEmail;
+        await supabase.from("user_profiles").update({ id }).eq("email", email);
+      } else {
+        const { data: inserted } = await supabase
+          .from("user_profiles")
+          .upsert({ id, name, email, role: "resident", favorites: [], created_at: new Date().toISOString() })
+          .select()
+          .single();
+        profile = inserted;
+      }
     }
 
     if (profile) {
