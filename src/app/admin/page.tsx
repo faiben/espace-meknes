@@ -12,6 +12,7 @@ import { useBusinessClaimStore } from "@/hooks/useBusinessClaimStore";
 import { useArtisanStore } from "@/hooks/useArtisanStore";
 import { useAdStore } from "@/hooks/useAdStore";
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { useContactMessageStore } from "@/hooks/useContactMessageStore";
 import { JobForm } from "@/components/JobForm";
 import { BusinessForm } from "@/components/BusinessForm";
 import { ArtisanForm } from "@/components/ArtisanForm";
@@ -22,11 +23,11 @@ import { Job, Business, ArtisanRequest, BusinessClaim, ArtisanProfile, Ad } from
 import { categoryEmojis } from "@/lib/categoryEmojis";
 import {
   Store, Users, Briefcase, Megaphone, MapPin, Upload, Download, BarChart3, Settings,
-  CheckCircle, XCircle, Eye, Plus, Trash2, Shield, UserX, AlertTriangle, Pencil, Send, Clock, Search, MessageCircle
+  CheckCircle, XCircle, Eye, Plus, Trash2, Shield, UserX, AlertTriangle, Pencil, Send, Clock, Search, MessageCircle, Mail
 } from "lucide-react";
 import clsx from "clsx";
 
-type AdminTab = "overview" | "users" | "businesses" | "artisans" | "jobs" | "artisanRequests" | "claims" | "ads" | "areas" | "settings";
+type AdminTab = "overview" | "users" | "businesses" | "artisans" | "jobs" | "artisanRequests" | "claims" | "messages" | "ads" | "areas" | "settings";
 
 export default function AdminPage() {
   const { t, isArabic } = useLang();
@@ -37,6 +38,7 @@ export default function AdminPage() {
   const { requests: artisanRequests, updateRequest, deleteRequest } = useArtisanRequestStore();
   const { claims, updateClaim, deleteClaim } = useBusinessClaimStore();
   const { allAds, addAd, updateAd, deleteAd } = useAdStore();
+  const { messages: contactMessages, markRead, deleteMessage } = useContactMessageStore();
   const { settings, updateSettings } = useAppSettings();
   const router = useRouter();
   const [tab, setTab] = useState<AdminTab>("overview");
@@ -108,6 +110,7 @@ export default function AdminPage() {
 
   const pendingRequests = artisanRequests.filter((r) => r.status === "pending").length;
   const pendingClaims = claims.filter((c) => c.status === "pending").length;
+  const unreadMessages = contactMessages.filter((m) => m.status === "unread").length;
 
   const tabs: { key: AdminTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { key: "overview", label: isArabic ? "نظرة عامة" : "Vue d'ensemble", icon: <BarChart3 size={18} /> },
@@ -117,6 +120,7 @@ export default function AdminPage() {
     { key: "jobs", label: t.manageJobs, icon: <Briefcase size={18} /> },
     { key: "artisanRequests", label: isArabic ? "طلبات الحرفيين" : "Demandes artisans", icon: <Send size={18} />, badge: pendingRequests },
     { key: "claims", label: isArabic ? "المطالبات" : "Réclamations", icon: <CheckCircle size={18} />, badge: pendingClaims },
+    { key: "messages", label: isArabic ? "رسائل التواصل" : "Messages", icon: <Mail size={18} />, badge: unreadMessages },
     { key: "ads", label: t.manageAds, icon: <Megaphone size={18} /> },
     { key: "areas", label: t.manageAreas, icon: <MapPin size={18} /> },
     { key: "settings", label: isArabic ? "الإعدادات" : "Paramètres", icon: <Settings size={18} /> },
@@ -632,6 +636,65 @@ export default function AdminPage() {
                 {claims.length === 0 && (
                   <div className="p-8 text-center text-navy-400">
                     {isArabic ? "لا توجد مطالبات" : "Aucune réclamation"}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Messages */}
+          {tab === "messages" && (
+            <div className="bg-white rounded-2xl border border-emerald-100 card-shadow overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-emerald-100">
+                <h2 className="font-bold text-navy-800">{isArabic ? "رسائل التواصل" : "Messages"} ({contactMessages.length})</h2>
+              </div>
+              <div className="divide-y divide-emerald-100">
+                {contactMessages.map((msg) => (
+                  <div key={msg.id} className={`p-4 hover:bg-primary-50 ${msg.status === "unread" ? "bg-primary-50/50" : ""}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          {msg.status === "unread" && <span className="w-2 h-2 rounded-full bg-primary-500 shrink-0" />}
+                          <span className="font-medium text-navy-800 text-sm">{msg.name}</span>
+                          <span className="text-xs text-navy-400">·</span>
+                          <span className="text-xs text-navy-500">{msg.email}</span>
+                        </div>
+                        <p className="text-xs text-navy-400 mb-1">
+                          {msg.category && <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[11px] mr-1">{msg.category}</span>}
+                          {msg.subject}
+                        </p>
+                        <p className="text-sm text-navy-600">{msg.message}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {msg.status === "unread" && (
+                          <button
+                            onClick={() => markRead(msg.id)}
+                            className="p-1 rounded text-navy-400 hover:text-primary-600 hover:bg-primary-50"
+                            title={isArabic ? "مقروء" : "Marquer lu"}
+                          >
+                            <Eye size={14} />
+                          </button>
+                        )}
+                        {confirmDelete === msg.id ? (
+                          <div className="flex gap-1">
+                            <button onClick={() => { deleteMessage(msg.id); setConfirmDelete(null); }} className="px-2 py-1 rounded text-xs bg-red-500 text-white">{t.yes}</button>
+                            <button onClick={() => setConfirmDelete(null)} className="px-2 py-1 rounded text-xs bg-navy-50 text-navy-600">{t.no}</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmDelete(msg.id)} className="p-1 rounded text-navy-400 hover:text-red-600 hover:bg-red-50">
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-navy-300 mt-2">
+                      {new Date(msg.createdAt).toLocaleDateString("fr-FR")} {new Date(msg.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                ))}
+                {contactMessages.length === 0 && (
+                  <div className="p-8 text-center text-navy-400">
+                    {isArabic ? "لا توجد رسائل" : "Aucun message"}
                   </div>
                 )}
               </div>

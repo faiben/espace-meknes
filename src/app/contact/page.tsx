@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useAppSettings } from "@/hooks/useAppSettings";
-import { sendContactEmail } from "@/lib/email";
+import { useContactMessageStore } from "@/hooks/useContactMessageStore";
 import { faqArticles } from "@/data";
 import { Mail, Send, CheckCircle, ChevronDown, ChevronUp, HelpCircle, MessageSquare, AlertCircle, Lightbulb, Handshake } from "lucide-react";
 import clsx from "clsx";
@@ -18,25 +18,27 @@ const contactCategories = [
 export default function ContactPage() {
   const { t, isArabic } = useLang();
   const { settings } = useAppSettings();
+  const { addMessage } = useContactMessageStore();
   const [form, setForm] = useState({ name: "", email: "", category: "", subject: "", message: "" });
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const emailTarget = settings.supportEmail || "support@espacemeknes.ma";
-    await sendContactEmail(emailTarget, form);
-    const phone = settings.whatsappNumber.replace(/[^0-9]/g, "");
-    const categoryLabels: Record<string, string> = {
-      generalQuestion: "Question générale",
-      reportIssue: "Signaler un problème",
-      suggestion: "Suggestion",
-      partnership: "Partenariat",
-    };
-    const msg = encodeURIComponent(
-      `Nouveau message de contact:\nNom: ${form.name}\nEmail: ${form.email}\nCatégorie: ${categoryLabels[form.category] || form.category}\nSujet: ${form.subject}\nMessage: ${form.message}`
-    );
-    window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+    setError("");
+    try {
+      await addMessage({
+        name: form.name,
+        email: form.email,
+        category: form.category,
+        subject: form.subject,
+        message: form.message,
+      });
+    } catch (err: any) {
+      setError(err?.message || "Erreur");
+      return;
+    }
     setSent(true);
     setTimeout(() => { setSent(false); setForm({ name: "", email: "", category: "", subject: "", message: "" }); }, 4000);
   };
@@ -57,6 +59,9 @@ export default function ContactPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                  <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-navy-700 mb-1">{t.nameLabel}</label>
