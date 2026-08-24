@@ -5,7 +5,6 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusinessClaimStore } from "@/hooks/useBusinessClaimStore";
 import { useAppSettings } from "@/hooks/useAppSettings";
-import { sendClaimEmail } from "@/lib/email";
 import { Business, PackageType } from "@/types";
 import { X, MessageCircle, CheckCircle } from "lucide-react";
 import clsx from "clsx";
@@ -25,30 +24,28 @@ export function BusinessClaimForm({ business, onClose }: BusinessClaimFormProps)
   const [whatsapp, setWhatsapp] = useState("");
   const [selectedPackage, setSelectedPackage] = useState<PackageType>("free");
   const [step, setStep] = useState<"form" | "verify" | "done">("form");
+  const [error, setError] = useState("");
 
   const existingClaim = getClaimForBusiness(business.id);
 
-  const handleClaim = () => {
+  const handleClaim = async () => {
     if (!user || !whatsapp.trim()) return;
-    addClaim({
-      businessId: business.id,
-      businessName: isArabic ? business.nameAr : business.nameFr,
-      userId: user.id,
-      userName: user.name,
-      userEmail: user.email,
-      whatsapp: whatsapp.trim(),
-      requestedPackage: selectedPackage,
-    });
-    setStep("verify");
-    if (settings.supportEmail) {
-      sendClaimEmail(settings.supportEmail, {
+    setError("");
+    try {
+      await addClaim({
+        businessId: business.id,
+        businessName: isArabic ? business.nameAr : business.nameFr,
+        userId: user.id,
         userName: user.name,
         userEmail: user.email,
-        businessName: isArabic ? business.nameAr : business.nameFr,
         whatsapp: whatsapp.trim(),
         requestedPackage: selectedPackage,
       });
+    } catch (err: any) {
+      setError(err?.message || "Erreur");
+      return;
     }
+    setStep("verify");
   };
 
   const handleVerify = () => {
@@ -106,6 +103,9 @@ export function BusinessClaimForm({ business, onClose }: BusinessClaimFormProps)
         <div className="p-6">
           {step === "form" && (
             <div className="space-y-5">
+              {error && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
+              )}
               <div className="bg-primary-50 rounded-xl p-4">
                 <p className="font-medium text-navy-800">{isArabic ? business.nameAr : business.nameFr}</p>
                 <p className="text-xs text-navy-500 mt-1">{isArabic ? business.address : business.address}</p>

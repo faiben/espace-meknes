@@ -39,10 +39,13 @@ export function useBusinessClaimStore() {
       status: "pending",
       createdAt: new Date().toISOString(),
     };
-    setClaims((prev) => [newClaim, ...prev]);
     const snake = toSnake(newClaim as unknown as Record<string, unknown>);
-    const { error } = await supabase.from("business_claims").upsert(snake);
-    if (error) console.error("Failed to save business claim:", error);
+    const { data, error } = await supabase.from("business_claims").upsert(snake).select();
+    if (error) {
+      console.error("Failed to save business claim:", error.message);
+      throw new Error(error.message);
+    }
+    setClaims((prev) => [newClaim, ...prev]);
     return newClaim;
   }, []);
 
