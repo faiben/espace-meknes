@@ -126,24 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) return { ok: false, error: error.message.includes("already") ? "Cet email est déjà utilisé" : error.message };
-    if (!data.user) return { ok: false, error: "Erreur lors de l'inscription" };
-
-    await supabase.from("user_profiles").upsert({
-      id: data.user.id,
-      name,
-      email,
-      role,
-      favorites: [],
-      created_at: new Date().toISOString(),
-    });
-
-    setUser({ id: data.user.id, name, email, role, favorites: [], createdAt: new Date().toISOString() });
-    return { ok: true };
-  }, []);
-
-  const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
   }, []);
@@ -181,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, users: allUsers, loading, login, register, logout, toggleFavorite, isFavorite, deleteUser, updateUser, getAdminUsers }}>
+    <AuthContext.Provider value={{ user, users: allUsers, loading, login, register, googleLogin, logout, toggleFavorite, isFavorite, deleteUser, updateUser, getAdminUsers }}>
       {children}
     </AuthContext.Provider>
   );
