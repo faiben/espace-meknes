@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useLang } from "@/contexts/LanguageContext";
+import { useAppSettings } from "@/hooks/useAppSettings";
+import { sendContactEmail } from "@/lib/email";
 import { faqArticles } from "@/data";
 import { Mail, Send, CheckCircle, ChevronDown, ChevronUp, HelpCircle, MessageSquare, AlertCircle, Lightbulb, Handshake } from "lucide-react";
 import clsx from "clsx";
@@ -15,12 +17,16 @@ const contactCategories = [
 
 export default function ContactPage() {
   const { t, isArabic } = useLang();
+  const { settings } = useAppSettings();
   const [form, setForm] = useState({ name: "", email: "", category: "", subject: "", message: "" });
   const [sent, setSent] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (settings.supportEmail) {
+      await sendContactEmail(settings.supportEmail, form);
+    }
     setSent(true);
     setTimeout(() => { setSent(false); setForm({ name: "", email: "", category: "", subject: "", message: "" }); }, 4000);
   };

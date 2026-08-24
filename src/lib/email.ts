@@ -1,3 +1,30 @@
+export async function sendContactEmail(toEmail: string, data: {
+  name: string;
+  email: string;
+  category: string;
+  subject: string;
+  message: string;
+}) {
+  try {
+    const res = await fetch(`https://formsubmit.co/${encodeURIComponent(toEmail)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        _subject: `[Espace Meknès] Contact - ${data.subject}`,
+        Nom: data.name,
+        Email: data.email,
+        Catégorie: data.category,
+        Sujet: data.subject,
+        Message: data.message,
+      }),
+    });
+    return res.ok ? { ok: true } : { ok: false, error: "Failed" };
+  } catch (err: any) {
+    console.error("Email send failed:", err);
+    return { ok: false, error: err.message || "Email failed" };
+  }
+}
+
 export async function sendArtisanRequestEmail(toEmail: string, data: {
   userName: string;
   userPhone: string;
