@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useLang } from "@/contexts/LanguageContext";
+import { useAppSettings } from "@/hooks/useAppSettings";
 import { ArtisanProfile, ArtisanRequest } from "@/types";
+import { sendArtisanRequestEmail } from "@/lib/email";
 import { areas } from "@/data";
 import { X, Send, CheckCircle } from "lucide-react";
 
@@ -14,6 +16,7 @@ interface ArtisanRequestFormProps {
 
 export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestFormProps) {
   const { t, isArabic } = useLang();
+  const { settings } = useAppSettings();
   const [sent, setSent] = useState(false);
   const [form, setForm] = useState({
     userName: "",
@@ -42,6 +45,15 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
       createdAt: now,
     });
     setSent(true);
+    if (settings.supportEmail) {
+      sendArtisanRequestEmail(settings.supportEmail, {
+        userName: form.userName,
+        userPhone: form.userPhone,
+        userEmail: form.userEmail,
+        artisanName: isArabic ? artisan.nameAr : artisan.nameFr,
+        description: isArabic ? form.descriptionAr : form.descriptionFr,
+      });
+    }
   };
 
   const inputClass = "w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white text-navy-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent";

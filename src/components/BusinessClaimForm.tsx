@@ -5,6 +5,7 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusinessClaimStore } from "@/hooks/useBusinessClaimStore";
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { sendClaimEmail } from "@/lib/email";
 import { Business, PackageType } from "@/types";
 import { X, MessageCircle, CheckCircle } from "lucide-react";
 import clsx from "clsx";
@@ -39,6 +40,15 @@ export function BusinessClaimForm({ business, onClose }: BusinessClaimFormProps)
       requestedPackage: selectedPackage,
     });
     setStep("verify");
+    if (settings.supportEmail) {
+      sendClaimEmail(settings.supportEmail, {
+        userName: user.name,
+        userEmail: user.email,
+        businessName: isArabic ? business.nameAr : business.nameFr,
+        whatsapp: whatsapp.trim(),
+        requestedPackage: selectedPackage,
+      });
+    }
   };
 
   const handleVerify = () => {
