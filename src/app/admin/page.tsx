@@ -456,6 +456,9 @@ export default function AdminPage() {
                         <p className="text-sm text-navy-600 mb-1">{isArabic ? req.descriptionAr : req.descriptionFr}</p>
                         <p className="text-xs text-navy-400">
                           {isArabic ? "التخصص" : "Spécialité"}: {t.specialties[req.specialty] || req.specialty}
+                          {req.areaId && (
+                            <span> · {isArabic ? "المنطقة" : "Quartier"}: {areas.find((a) => a.id === req.areaId) ? (isArabic ? areas.find((a) => a.id === req.areaId)!.nameAr : areas.find((a) => a.id === req.areaId)!.nameFr) : req.areaId}</span>
+                          )}
                           {req.contactedArtisans.length > 1 && (
                             <span className="ml-2 text-orange-500">
                               · {isArabic ? "تم الاتصال بـ" : "Contacté"} {req.contactedArtisans.length} {isArabic ? "حرفيين" : "artisans"}
