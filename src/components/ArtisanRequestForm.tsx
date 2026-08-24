@@ -21,7 +21,6 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [debug, setDebug] = useState("");
   const [form, setForm] = useState({
     userName: "",
     userPhone: "",
@@ -52,10 +51,9 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
       created_at: now,
     };
     try {
-      const result = await supabase.from("artisan_requests").upsert(reqData).select();
-      setDebug(JSON.stringify({ error: result.error, data: result.data, status: result.status }, null, 2));
-      if (result.error) {
-        setError(result.error.message + " " + (result.error.details || "") + " " + (result.error.hint || ""));
+      const { error } = await supabase.from("artisan_requests").upsert(reqData).select();
+      if (error) {
+        setError(error.message + " " + (error.details || "") + " " + (error.hint || ""));
         setLoading(false);
         return;
       }
@@ -93,9 +91,6 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
               ? "تم إرسال طلبك. سيتصل بك فريقنا قريباً."
               : "Votre demande a été envoyée. Notre équipe vous contactera bientôt."}
           </p>
-          {debug && (
-            <pre className="mb-4 p-3 bg-gray-100 rounded text-xs text-left overflow-auto max-h-40 text-red-700">{debug}</pre>
-          )}
           <button onClick={onClose} className="px-6 py-2.5 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors">
             {isArabic ? "إغلاق" : "Fermer"}
           </button>
@@ -170,9 +165,6 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
               <Send size={14} /> {loading ? (isArabic ? "جاري الإرسال..." : "Envoi...") : (isArabic ? "إرسال الطلب" : "Envoyer la demande")}
             </button>
           </div>
-          {debug && (
-            <pre className="mt-4 p-3 bg-gray-100 rounded text-xs text-left overflow-auto max-h-40">{debug}</pre>
-          )}
         </form>
       </div>
     </div>

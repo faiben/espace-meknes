@@ -4,6 +4,7 @@ import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
 import { useArtisanStore } from "@/hooks/useArtisanStore";
+import { useArtisanRequestStore } from "@/hooks/useArtisanRequestStore";
 import { areas } from "@/data";
 import { searchArtisans, sortByDistance } from "@/utils/search";
 import { ArtisanCard } from "@/components/ArtisanCard";
@@ -11,11 +12,13 @@ import { SearchBar } from "@/components/SearchBar";
 import { Shield, Users, Phone as PhoneIcon, CheckCircle, Navigation, X, SlidersHorizontal, MessageCircle } from "lucide-react";
 import clsx from "clsx";
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { sendArtisanRequestEmail } from "@/lib/email";
 
 function ArtisansContent() {
   const { t, isArabic } = useLang();
   const { settings } = useAppSettings();
   const { allArtisans } = useArtisanStore();
+  const { addRequest } = useArtisanRequestStore();
   const [query, setQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
   const [nearMe, setNearMe] = useState(false);
@@ -60,8 +63,39 @@ function ArtisansContent() {
     return results;
   }, [query, selectedSpecialty, nearMe, userLocation, radius, allArtisans]);
 
-  const handleRequest = (e: React.FormEvent) => {
+  const handleRequest = async (e: React.FormEvent) => {
     e.preventDefault();
+    const now = new Date().toISOString();
+    try {
+      await addRequest({
+        id: `ar${Date.now()}`,
+        artisanId: "",
+        artisanName: isArabic ? "طلب عام" : "Demande générale",
+        userName: requestForm.name,
+        userPhone: requestForm.phone,
+        userEmail: "",
+        descriptionFr: requestForm.description,
+        descriptionAr: requestForm.description,
+        specialty: (requestForm.specialty || "autre") as any,
+        areaId: requestForm.area || "",
+        status: "pending",
+        contactedArtisans: [],
+        notes: "",
+        createdAt: now,
+      });
+      if (settings.supportEmail) {
+        await sendArtisanRequestEmail(settings.supportEmail, {
+          userName: requestForm.name,
+          userPhone: requestForm.phone,
+          userEmail: "",
+          artisanName: "Demande générale",
+          description: requestForm.description,
+        });
+      }
+    } catch (err: any) {
+      alert(isArabic ? "خطأ: " + err.message : "Erreur: " + err.message);
+      return;
+    }
     setRequestSent(true);
     setTimeout(() => { setRequestSent(false); setShowRequest(false); }, 3000);
   };
