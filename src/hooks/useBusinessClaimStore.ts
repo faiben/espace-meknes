@@ -40,7 +40,9 @@ export function useBusinessClaimStore() {
       createdAt: new Date().toISOString(),
     };
     setClaims((prev) => [newClaim, ...prev]);
-    await supabase.from("business_claims").upsert(toSnake(newClaim as unknown as Record<string, unknown>));
+    const snake = toSnake(newClaim as unknown as Record<string, unknown>);
+    const { error } = await supabase.from("business_claims").upsert(snake);
+    if (error) console.error("Failed to save business claim:", error);
     return newClaim;
   }, []);
 

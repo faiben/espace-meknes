@@ -34,7 +34,9 @@ export function useArtisanRequestStore() {
 
   const addRequest = useCallback(async (req: ArtisanRequest) => {
     setRequests((prev) => [req, ...prev]);
-    await supabase.from("artisan_requests").upsert(toSnake(req as unknown as Record<string, unknown>));
+    const snake = toSnake(req as unknown as Record<string, unknown>);
+    const { error } = await supabase.from("artisan_requests").upsert(snake);
+    if (error) console.error("Failed to save artisan request:", error);
   }, []);
 
   const updateRequest = useCallback(async (updated: ArtisanRequest) => {
