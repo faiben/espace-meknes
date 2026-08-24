@@ -22,7 +22,7 @@ import { Job, Business, ArtisanRequest, BusinessClaim, ArtisanProfile, Ad } from
 import { categoryEmojis } from "@/lib/categoryEmojis";
 import {
   Store, Users, Briefcase, Megaphone, MapPin, Upload, Download, BarChart3, Settings,
-  CheckCircle, XCircle, Eye, Plus, Trash2, Shield, UserX, AlertTriangle, Pencil, Send, Clock, Search
+  CheckCircle, XCircle, Eye, Plus, Trash2, Shield, UserX, AlertTriangle, Pencil, Send, Clock, Search, MessageCircle
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -502,6 +502,23 @@ export default function AdminPage() {
                             <option value="completed">{isArabic ? "مكتمل" : "Terminé"}</option>
                             <option value="cancelled">{isArabic ? "ملغي" : "Annulé"}</option>
                           </select>
+                          {req.userPhone && (
+                            <button
+                              onClick={() => {
+                                const phone = req.userPhone.replace(/[^0-9]/g, "");
+                                const msg = encodeURIComponent(
+                                  isArabic
+                                    ? `مرحبا ${req.userName}, بخصوص طلبك: ${t.specialties[req.specialty] || req.specialty}`
+                                    : `Bonjour ${req.userName}, concernant votre demande: ${t.specialties[req.specialty] || req.specialty}`
+                                );
+                                window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+                              }}
+                              className="p-1 rounded text-green-600 hover:bg-green-50"
+                              title={isArabic ? "واتساب" : "WhatsApp"}
+                            >
+                              <MessageCircle size={14} />
+                            </button>
+                          )}
                           {confirmDelete === req.id ? (
                             <div className="flex gap-1">
                               <button onClick={() => { deleteRequest(req.id); setConfirmDelete(null); }} className="px-2 py-1 rounded text-xs bg-red-500 text-white">{t.yes}</button>
