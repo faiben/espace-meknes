@@ -5,6 +5,7 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { ArtisanProfile, ArtisanRequest } from "@/types";
 import { sendArtisanRequestEmail } from "@/lib/email";
+import { supabase } from "@/lib/supabase";
 import { areas } from "@/data";
 import { X, Send, CheckCircle } from "lucide-react";
 
@@ -19,6 +20,7 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
   const { settings } = useAppSettings();
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     userName: "",
     userPhone: "",
@@ -30,38 +32,45 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     const now = new Date().toISOString();
+    const reqData = {
+      id: `ar${Date.now()}`,
+      artisan_id: artisan.id,
+      artisan_name: isArabic ? artisan.nameAr : artisan.nameFr,
+      user_name: form.userName,
+      user_phone: form.userPhone,
+      user_email: form.userEmail,
+      description_fr: form.descriptionFr,
+      description_ar: form.descriptionAr,
+      specialty: artisan.specialty,
+      area_id: artisan.areaId,
+      status: "pending",
+      contacted_artisans: [artisan.id],
+      notes: "",
+      created_at: now,
+    };
     try {
-      await onSave({
-        id: `ar${Date.now()}`,
-        artisanId: artisan.id,
-        artisanName: isArabic ? artisan.nameAr : artisan.nameFr,
-        userName: form.userName,
-        userPhone: form.userPhone,
-        userEmail: form.userEmail,
-        descriptionFr: form.descriptionFr,
-        descriptionAr: form.descriptionAr,
-        specialty: artisan.specialty,
-        areaId: artisan.areaId,
-        status: "pending",
-        contactedArtisans: [artisan.id],
-        notes: "",
-        createdAt: now,
-      });
+      const { data, error } = await supabase.from("artisan_requests").upsert(reqData).select();
+      if (error) {
+        setError(error.message + " " + (error.details || "") + " " + (error.hint || ""));
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      setSent(true);
+      if (settings.supportEmail) {
+        sendArtisanRequestEmail(settings.supportEmail, {
+          userName: form.userName,
+          userPhone: form.userPhone,
+          userEmail: form.userEmail,
+          artisanName: isArabic ? artisan.nameAr : artisan.nameFr,
+          description: isArabic ? form.descriptionAr : form.descriptionFr,
+        });
+      }
     } catch (err: any) {
-      console.error("Save failed:", err);
-      setError(err?.message || "Erreur lors de l'enregistrement");
-      return;
-    }
-    setSent(true);
-    if (settings.supportEmail) {
-      sendArtisanRequestEmail(settings.supportEmail, {
-        userName: form.userName,
-        userPhone: form.userPhone,
-        userEmail: form.userEmail,
-        artisanName: isArabic ? artisan.nameAr : artisan.nameFr,
-        description: isArabic ? form.descriptionAr : form.descriptionFr,
-      });
+      setError(err?.message || "Erreur");
+      setLoading(false);
     }
   };
 
@@ -152,8 +161,8 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
             <button type="button" onClick={onClose} className="px-5 py-2 rounded-lg text-sm font-medium text-navy-600 hover:bg-navy-50 transition-colors">
               {t.cancel}
             </button>
-            <button type="submit" className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors">
-              <Send size={14} /> {isArabic ? "إرسال الطلب" : "Envoyer la demande"}
+            <button type="submit" disabled={loading} className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors disabled:opacity-50">
+              <Send size={14} /> {loading ? (isArabic ? "جاري الإرسال..." : "Envoi...") : (isArabic ? "إرسال الطلب" : "Envoyer la demande")}
             </button>
           </div>
         </form>
