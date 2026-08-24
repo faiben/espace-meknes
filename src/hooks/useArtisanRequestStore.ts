@@ -36,10 +36,9 @@ export function useArtisanRequestStore() {
     const snake = toSnake(req as unknown as Record<string, unknown>);
     const { data, error } = await supabase.from("artisan_requests").upsert(snake).select();
     if (error) {
-      alert("Supabase error: " + error.message + "\nDetails: " + error.details + "\nHint: " + error.hint);
+      console.error("Supabase error:", error.message, error.details, error.hint);
       throw new Error(error.message);
     }
-    alert("Saved OK! Rows: " + JSON.stringify(data?.length ?? 0));
     setRequests((prev) => [req, ...prev]);
   }, []);
 
