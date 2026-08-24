@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,7 +30,7 @@ type AdminTab = "overview" | "users" | "businesses" | "artisans" | "jobs" | "art
 
 export default function AdminPage() {
   const { t, isArabic } = useLang();
-  const { user, users, deleteUser, updateUser } = useAuth();
+  const { user, users, deleteUser, updateUser, getAdminUsers } = useAuth();
   const { allJobs, addJob, updateJob, deleteJob } = useJobStore();
   const { allBusinesses, addBusiness, updateBusiness, deleteBusiness } = useBusinessStore();
   const { allArtisans, addArtisan, updateArtisan, deleteArtisan } = useArtisanStore();
@@ -55,6 +55,10 @@ export default function AdminPage() {
   const [editingAd, setEditingAd] = useState<Ad | null>(null);
   const [businessSearch, setBusinessSearch] = useState("");
   const [artisanSearch, setArtisanSearch] = useState("");
+
+  useEffect(() => {
+    if (user?.role === "admin") getAdminUsers();
+  }, [user]);
 
   const filteredBusinesses = useMemo(() => {
     if (!businessSearch.trim()) return allBusinesses;
