@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { ArtisanProfile, ArtisanRequest } from "@/types";
-import { sendArtisanRequestEmail } from "@/lib/email";
 import { supabase } from "@/lib/supabase";
 import { areas } from "@/data";
 import { X, Send, CheckCircle } from "lucide-react";
@@ -59,15 +58,13 @@ export function ArtisanRequestForm({ artisan, onSave, onClose }: ArtisanRequestF
       }
       setLoading(false);
       setSent(true);
-      if (settings.supportEmail) {
-        sendArtisanRequestEmail(settings.supportEmail, {
-          userName: form.userName,
-          userPhone: form.userPhone,
-          userEmail: form.userEmail,
-          artisanName: isArabic ? artisan.nameAr : artisan.nameFr,
-          description: isArabic ? form.descriptionAr : form.descriptionFr,
-        });
-      }
+      const phone = settings.whatsappNumber.replace(/[^0-9]/g, "");
+      const msg = encodeURIComponent(
+        isArabic
+          ? `طلب حرفي:\nالاسم: ${form.userName}\nالهاتف: ${form.userPhone}\nالحرفي: ${artisan.nameAr}\nالتخصص: ${t.specialties[artisan.specialty]}\nالوصف: ${form.descriptionAr}`
+          : `Demande artisan:\nNom: ${form.userName}\nTél: ${form.userPhone}\nArtisan: ${artisan.nameFr}\nSpécialité: ${t.specialties[artisan.specialty]}\nDescription: ${form.descriptionFr}`
+      );
+      window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
     } catch (err: any) {
       setError(err?.message || "Erreur");
       setLoading(false);

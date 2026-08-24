@@ -12,7 +12,6 @@ import { SearchBar } from "@/components/SearchBar";
 import { Shield, Users, Phone as PhoneIcon, CheckCircle, Navigation, X, SlidersHorizontal, MessageCircle } from "lucide-react";
 import clsx from "clsx";
 import { useAppSettings } from "@/hooks/useAppSettings";
-import { sendArtisanRequestEmail } from "@/lib/email";
 
 function ArtisansContent() {
   const { t, isArabic } = useLang();
@@ -66,6 +65,8 @@ function ArtisansContent() {
   const handleRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     const now = new Date().toISOString();
+    const specialtyLabel = t.specialties[(requestForm.specialty || "autre") as keyof typeof t.specialties] || requestForm.specialty;
+    const areaLabel = requestForm.area ? (areas.find((a) => a.id === requestForm.area) ? (isArabic ? areas.find((a) => a.id === requestForm.area)!.nameAr : areas.find((a) => a.id === requestForm.area)!.nameFr) : requestForm.area) : "";
     try {
       await addRequest({
         id: `ar${Date.now()}`,
@@ -83,15 +84,13 @@ function ArtisansContent() {
         notes: "",
         createdAt: now,
       });
-      if (settings.supportEmail) {
-        await sendArtisanRequestEmail(settings.supportEmail, {
-          userName: requestForm.name,
-          userPhone: requestForm.phone,
-          userEmail: "",
-          artisanName: "Demande générale",
-          description: requestForm.description,
-        });
-      }
+      const phone = settings.whatsappNumber.replace(/[^0-9]/g, "");
+      const msg = encodeURIComponent(
+        isArabic
+          ? `طلب حرفي جديد:\nالاسم: ${requestForm.name}\nالهاتف: ${requestForm.phone}\nالتخصص: ${specialtyLabel}\nالمنطقة: ${areaLabel}\nالوصف: ${requestForm.description}`
+          : `Nouvelle demande artisan:\nNom: ${requestForm.name}\nTél: ${requestForm.phone}\nSpécialité: ${specialtyLabel}\nQuartier: ${areaLabel}\nDescription: ${requestForm.description}`
+      );
+      window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
     } catch (err: any) {
       alert(isArabic ? "خطأ: " + err.message : "Erreur: " + err.message);
       return;

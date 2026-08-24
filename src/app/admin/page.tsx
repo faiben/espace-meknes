@@ -106,14 +106,17 @@ export default function AdminPage() {
   const activeJobs = allJobs;
   const activeAds = allAds;
 
-  const tabs: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
+  const pendingRequests = artisanRequests.filter((r) => r.status === "pending").length;
+  const pendingClaims = claims.filter((c) => c.status === "pending").length;
+
+  const tabs: { key: AdminTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { key: "overview", label: isArabic ? "نظرة عامة" : "Vue d'ensemble", icon: <BarChart3 size={18} /> },
     { key: "users", label: isArabic ? "المستخدمون" : "Utilisateurs", icon: <Users size={18} /> },
     { key: "businesses", label: t.manageBusinesses, icon: <Store size={18} /> },
     { key: "artisans", label: t.manageArtisans, icon: <Users size={18} /> },
     { key: "jobs", label: t.manageJobs, icon: <Briefcase size={18} /> },
-    { key: "artisanRequests", label: isArabic ? "طلبات الحرفيين" : "Demandes artisans", icon: <Send size={18} /> },
-    { key: "claims", label: isArabic ? "المطالبات" : "Réclamations", icon: <CheckCircle size={18} /> },
+    { key: "artisanRequests", label: isArabic ? "طلبات الحرفيين" : "Demandes artisans", icon: <Send size={18} />, badge: pendingRequests },
+    { key: "claims", label: isArabic ? "المطالبات" : "Réclamations", icon: <CheckCircle size={18} />, badge: pendingClaims },
     { key: "ads", label: t.manageAds, icon: <Megaphone size={18} /> },
     { key: "areas", label: t.manageAreas, icon: <MapPin size={18} /> },
     { key: "settings", label: isArabic ? "الإعدادات" : "Paramètres", icon: <Settings size={18} /> },
@@ -153,6 +156,9 @@ export default function AdminPage() {
               >
                 {tabItem.icon}
                 {tabItem.label}
+                {tabItem.badge && tabItem.badge > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{tabItem.badge}</span>
+                )}
               </button>
             ))}
           </div>
