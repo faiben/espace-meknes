@@ -26,46 +26,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const ensureProfile = async (authUser: any) => {
+    const id = authUser.id;
+    const email = authUser.email || "";
+    const name = authUser.user_metadata?.full_name || authUser.user_metadata?.name || email.split("@")[0] || "User";
+
+    let { data: profile } = await supabase
+      .from("user_profiles")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (!profile) {
+      const { data: inserted } = await supabase
+        .from("user_profiles")
+        .upsert({ id, name, email, role: "resident", favorites: [], created_at: new Date().toISOString() })
+        .select()
+        .single();
+      profile = inserted;
+    }
+
+    if (profile) {
+      setUser({
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        role: profile.role,
+        favorites: profile.favorites || [],
+        createdAt: profile.created_at,
+      });
+    }
+  };
+
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from("user_profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-        if (profile) {
-          setUser({
-            id: profile.id,
-            name: profile.name,
-            email: profile.email,
-            role: profile.role,
-            favorites: profile.favorites || [],
-            createdAt: profile.created_at,
-          });
-        }
+        await ensureProfile(session.user);
       }
       setLoading(false);
     })();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from("user_profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-        if (profile) {
-          setUser({
-            id: profile.id,
-            name: profile.name,
-            email: profile.email,
-            role: profile.role,
-            favorites: profile.favorites || [],
-            createdAt: profile.created_at,
-          });
-        }
+        await ensureProfile(session.user);
       } else {
         setUser(null);
       }
