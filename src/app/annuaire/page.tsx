@@ -26,6 +26,7 @@ function AnnuaireContent() {
   const [usingFallback, setUsingFallback] = useState(false);
   const [locStatus, setLocStatus] = useState<"idle" | "locating" | "ok" | "blocked" | "error">("idle");
   const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [clampedToCenter, setClampedToCenter] = useState(false);
   const CITY_CENTER = { lat: 34.0331, lng: -5.5473 };
 
   const positionRef = useRef<number | null>(null);
@@ -135,13 +136,27 @@ function AnnuaireContent() {
 
   const filtered = useMemo(() => {
     let results = searchBusinesses(query, undefined, selectedCategory || undefined, allBusinesses);
-    if (nearMe && position && userLocation) {
-      const source = usingFallback ? CITY_CENTER : userLocation;
-      const sorted = sortByDistance(results, source.lat, source.lng);
-      results = sorted.filter((b) => b.distance <= radius);
+    if (nearMe) {
+      const ref = position && userLocation ? userLocation : CITY_CENTER;
+      const sorted = sortByDistance(results, ref.lat, ref.lng);
+      const nearest = sorted[0]?.distance ?? Infinity;
+      const useCenter = usingFallback || nearest > 5;
+      const source = useCenter ? CITY_CENTER : ref;
+      const finalSorted = useCenter ? sortByDistance(results, source.lat, source.lng) : sorted;
+      results = finalSorted.filter((b) => b.distance <= radius);
     }
     return results;
   }, [query, selectedCategory, nearMe, position, userLocation, radius, usingFallback, allBusinesses]);
+
+  useEffect(() => {
+    if (!nearMe || !position || !userLocation) {
+      setClampedToCenter(false);
+      return;
+    }
+    const probe = sortByDistance(allBusinesses, userLocation.lat, userLocation.lng);
+    const nearest = probe[0]?.distance ?? Infinity;
+    setClampedToCenter(usingFallback || nearest > 5);
+  }, [nearMe, position, userLocation, usingFallback, allBusinesses]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -214,12 +229,19 @@ function AnnuaireContent() {
                       {isArabic ? "تعذر تحديد موقعك بدقة. تم استخدام وسط المدينة." : "Impossible de vous localiser précisément. Résultats autour du centre-ville."}
                     </p>
                   )}
-                  {locStatus === "ok" && !usingFallback && (
+                  {locStatus === "ok" && !usingFallback && clampedToCenter && (
+                    <p className="text-[11px] text-amber-600 mt-1">
+                      {isArabic
+                        ? "موقعك (من الشبكة) بعيد عن المركز. تم ضبط النتائج حول وسط المدينة."
+                        : "Votre position (réseau) est éloignée du centre. Résultats centrés sur la ville."}
+                    </p>
+                  )}
+                  {locStatus === "ok" && !usingFallback && !clampedToCenter && (
                     <p className="text-[11px] text-emerald-600 mt-1 flex items-center gap-1">
                       <Navigation size={11} />
                       {isArabic
-                        ? (accuracy != null && accuracy > 800 ? "تم تحديد موقعك تقريبياً (شبكة)." : "تم تحديد موقعك بدقة.")
-                        : (accuracy != null && accuracy > 800 ? "Position approximative (réseau)." : "Position précise (GPS).")}
+                        ? (accuracy != null && accuracy > 800 ? `تم تحديد موقعك تقريبياً (${userLocation?.lat?.toFixed(4)}, ${userLocation?.lng?.toFixed(4)}).` : "تم تحديد موقعك بدقة.")
+                        : (accuracy != null && accuracy > 800 ? `Position approximative (${userLocation?.lat?.toFixed(4)}, ${userLocation?.lng?.toFixed(4)}).` : "Position précise (GPS).")}
                     </p>
                   )}
                   <label className="text-xs text-navy-500 block mt-2">
