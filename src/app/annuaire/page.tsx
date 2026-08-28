@@ -22,15 +22,21 @@ function AnnuaireContent() {
   const [radius, setRadius] = useState(15);
   const [nearMe, setNearMe] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [usingFallback, setUsingFallback] = useState(false);
+  const CITY_CENTER = { lat: 34.0331, lng: -5.5473 };
 
   const handleNearMe = () => {
     if (nearMe) {
       setNearMe(false);
       setUserLocation(null);
+      setUsingFallback(false);
       return;
     }
+    setUsingFallback(false);
     if (!("geolocation" in navigator)) {
-      alert(isArabic ? "المتصفح لا يدعم تحديد الموقع" : "La géolocalisation n'est pas disponible");
+      setUserLocation(CITY_CENTER);
+      setNearMe(true);
+      setUsingFallback(true);
       return;
     }
     setLocating(true);
@@ -41,10 +47,12 @@ function AnnuaireContent() {
         setLocating(false);
       },
       () => {
-        alert(isArabic ? "تعذر تحديد الموقع. تأكد من تفعيل خدمات الموقع." : "Impossible d'obtenir la localisation. Vérifiez les paramètres de localisation.");
+        setUserLocation(CITY_CENTER);
+        setNearMe(true);
+        setUsingFallback(true);
         setLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
@@ -53,12 +61,16 @@ function AnnuaireContent() {
   const filtered = useMemo(() => {
     let results = searchBusinesses(query, undefined, selectedCategory || undefined, allBusinesses);
     if (nearMe && userLocation) {
-      results = sortByDistance(results, userLocation.lat, userLocation.lng).filter(
-        (b) => b.distance <= radius
-      );
+      const sorted = sortByDistance(results, userLocation.lat, userLocation.lng);
+      const within = sorted.filter((b) => b.distance <= radius);
+      if (usingFallback || within.length === 0) {
+        results = sorted;
+      } else {
+        results = within;
+      }
     }
     return results;
-  }, [query, selectedCategory, nearMe, userLocation, radius, allBusinesses]);
+  }, [query, selectedCategory, nearMe, userLocation, radius, usingFallback, allBusinesses]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -130,6 +142,11 @@ function AnnuaireContent() {
                     onChange={(e) => setRadius(Number(e.target.value))}
                     className="w-full mt-1"
                   />
+                  {usingFallback && (
+                    <p className="text-[11px] text-amber-600 mt-1">
+                      {isArabic ? "تعذر تحديد موقعك بدقة. تم استخدام وسط المدينة." : "Impossible de vous localiser précisément. Résultats autour du centre-ville."}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
