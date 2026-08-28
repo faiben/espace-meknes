@@ -11,7 +11,7 @@ import { getAreaName } from "@/utils/search";
 import { categoryEmojis } from "@/lib/categoryEmojis";
 import { StarRating } from "@/components/StarRating";
 import { AdBanner } from "@/components/AdBanner";
-import { MapPin, Star, Phone, Mail, Globe, ArrowLeft, Heart, Share2, Tag, Navigation, MessageCircle, ChevronLeft, ChevronRight, Play, Send, BadgeCheck } from "lucide-react";
+import { MapPin, Star, Phone, Mail, Globe, ArrowLeft, Heart, Share2, Navigation, MessageCircle, ChevronLeft, ChevronRight, Play, Send, BadgeCheck } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
@@ -173,13 +173,6 @@ function BusinessDetailContent() {
             <div>
               <p className="text-xs text-navy-400">{t.address}</p>
               <p className="text-sm font-medium text-navy-700">{business.address} — {isArabic ? area.ar : area.fr}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-navy-50 rounded-xl">
-            <Tag size={18} className="text-primary-500 shrink-0" />
-            <div>
-              <p className="text-xs text-navy-400">{t.postalCode}</p>
-              <p className="text-sm font-medium text-navy-700">{area.fr} ({business.areaId})</p>
             </div>
           </div>
         </div>
