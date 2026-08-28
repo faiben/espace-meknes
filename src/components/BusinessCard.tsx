@@ -10,9 +10,10 @@ import { MapPin, Star, Phone, Navigation, MessageCircle, Heart, Share2 } from "l
 
 interface BusinessCardProps {
   business: Business;
+  distance?: number;
 }
 
-export function BusinessCard({ business }: BusinessCardProps) {
+export function BusinessCard({ business, distance }: BusinessCardProps) {
   const { t, isArabic } = useLang();
   const { user, toggleFavorite, isFavorite } = useAuth();
   const isPro = business.packageType === "pro";
@@ -92,6 +93,11 @@ export function BusinessCard({ business }: BusinessCardProps) {
         <div className="flex items-center gap-1 text-xs text-navy-400 mb-3">
           <MapPin size={12} className="text-primary-500" />
           <span>{t.categories[business.category]}</span>
+          {typeof distance === "number" && (
+            <span className="ml-auto flex items-center gap-1 bg-primary-50 text-primary-700 font-semibold px-2 py-0.5 rounded-full">
+              <Navigation size={11} /> {distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} ${t.km}`}
+            </span>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           {hasExtra && (

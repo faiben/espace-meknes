@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
+import { useState, useMemo, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
 import { useBusinessStore } from "@/hooks/useBusinessStore";
@@ -19,21 +19,38 @@ function AnnuaireContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [showMap, setShowMap] = useState(searchParams.get("map") === "true");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [radius, setRadius] = useState(15);
+  const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [radius, setRadius] = useState(5);
   const [nearMe, setNearMe] = useState(false);
   const [locating, setLocating] = useState(false);
   const [usingFallback, setUsingFallback] = useState(false);
   const CITY_CENTER = { lat: 34.0331, lng: -5.5473 };
 
+  const positionRef = useRef<number | null>(null);
+
+  const stopWatching = () => {
+    if (positionRef.current !== null) {
+      navigator.geolocation.clearWatch(positionRef.current);
+      positionRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => stopWatching();
+  }, []);
+
   const handleNearMe = () => {
     if (nearMe) {
       setNearMe(false);
+      setPosition(null);
       setUserLocation(null);
       setUsingFallback(false);
+      stopWatching();
       return;
     }
     setUsingFallback(false);
     if (!("geolocation" in navigator)) {
+      setPosition(CITY_CENTER);
       setUserLocation(CITY_CENTER);
       setNearMe(true);
       setUsingFallback(true);
@@ -42,11 +59,14 @@ function AnnuaireContent() {
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setPosition(p);
+        setUserLocation(p);
         setNearMe(true);
         setLocating(false);
       },
       () => {
+        setPosition(CITY_CENTER);
         setUserLocation(CITY_CENTER);
         setNearMe(true);
         setUsingFallback(true);
@@ -54,24 +74,33 @@ function AnnuaireContent() {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+    if ("geolocation" in navigator) {
+      positionRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setPosition(p);
+          setUserLocation(p);
+          setUsingFallback(false);
+        },
+        () => {
+          /* keep last known position */
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+      );
+    }
   };
 
   const { allBusinesses } = useBusinessStore();
 
   const filtered = useMemo(() => {
     let results = searchBusinesses(query, undefined, selectedCategory || undefined, allBusinesses);
-    if (nearMe && userLocation) {
-      const fullSorted = sortByDistance(results, CITY_CENTER.lat, CITY_CENTER.lng);
-      let sorted = sortByDistance(results, userLocation.lat, userLocation.lng);
-      const nearest = sorted[0]?.distance ?? Infinity;
-      if (usingFallback || nearest > 10) {
-        sorted = fullSorted;
-      }
-      const within = sorted.filter((b) => b.distance <= radius);
-      results = within.length > 0 ? within : sorted;
+    if (nearMe && position && userLocation) {
+      const source = usingFallback ? CITY_CENTER : userLocation;
+      const sorted = sortByDistance(results, source.lat, source.lng);
+      results = sorted.filter((b) => b.distance <= radius);
     }
     return results;
-  }, [query, selectedCategory, nearMe, userLocation, radius, usingFallback, allBusinesses]);
+  }, [query, selectedCategory, nearMe, position, userLocation, radius, usingFallback, allBusinesses]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -137,8 +166,9 @@ function AnnuaireContent() {
                   </label>
                   <input
                     type="range"
-                    min="1"
-                    max="50"
+                    min="0.5"
+                    max="25"
+                    step="0.5"
                     value={radius}
                     onChange={(e) => setRadius(Number(e.target.value))}
                     className="w-full mt-1"
@@ -164,7 +194,7 @@ function AnnuaireContent() {
             {/* Reset */}
             {(selectedCategory || nearMe) && (
               <button
-                onClick={() => { setSelectedCategory(""); setNearMe(false); setUserLocation(null); }}
+                onClick={() => { setSelectedCategory(""); setNearMe(false); setPosition(null); setUserLocation(null); setUsingFallback(false); stopWatching(); }}
                 className="w-full mt-3 flex items-center justify-center gap-1 text-sm text-red-500 hover:text-red-600"
               >
                 <X size={14} /> {t.resetFilters}
@@ -188,12 +218,16 @@ function AnnuaireContent() {
           {filtered.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-5xl mb-4">🔍</p>
-              <p className="text-navy-500 text-lg">{t.noResults}</p>
+              <p className="text-navy-500 text-lg">
+                {nearMe
+                  ? (isArabic ? `لا توجد نتائج ضمن ${radius} كلم. يمكنك زيادة المسافة.` : `Aucun résultat dans un rayon de ${radius} km. Augmentez la distance.`)
+                  : t.noResults}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {filtered.map((b) => (
-                <BusinessCard key={b.id} business={b} />
+                <BusinessCard key={b.id} business={b} distance={nearMe ? (b as any).distance : undefined} />
               ))}
             </div>
           )}
