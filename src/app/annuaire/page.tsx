@@ -19,7 +19,7 @@ function AnnuaireContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [showMap, setShowMap] = useState(searchParams.get("map") === "true");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [radius, setRadius] = useState(10);
+  const [radius, setRadius] = useState(15);
   const [nearMe, setNearMe] = useState(false);
   const [locating, setLocating] = useState(false);
 
@@ -125,7 +125,7 @@ function AnnuaireContent() {
                   <input
                     type="range"
                     min="1"
-                    max="20"
+                    max="50"
                     value={radius}
                     onChange={(e) => setRadius(Number(e.target.value))}
                     className="w-full mt-1"
