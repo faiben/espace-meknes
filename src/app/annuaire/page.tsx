@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, Suspense } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
 import { useBusinessStore } from "@/hooks/useBusinessStore";
@@ -24,6 +24,8 @@ function AnnuaireContent() {
   const [nearMe, setNearMe] = useState(false);
   const [locating, setLocating] = useState(false);
   const [usingFallback, setUsingFallback] = useState(false);
+  const [locStatus, setLocStatus] = useState<"idle" | "locating" | "ok" | "blocked" | "error">("idle");
+  const [accuracy, setAccuracy] = useState<number | null>(null);
   const CITY_CENTER = { lat: 34.0331, lng: -5.5473 };
 
   const positionRef = useRef<number | null>(null);
@@ -39,55 +41,94 @@ function AnnuaireContent() {
     return () => stopWatching();
   }, []);
 
-  const handleNearMe = () => {
+  const checkPermission = useCallback(async (): Promise<"granted" | "denied" | "prompt" | "unknown"> => {
+    try {
+      if (navigator.permissions && navigator.permissions.query) {
+        const res = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+        return res.state as "granted" | "denied" | "prompt";
+      }
+    } catch {
+      /* fallthrough */
+    }
+    return "unknown";
+  }, []);
+
+  const handleNearMe = async () => {
     if (nearMe) {
       setNearMe(false);
       setPosition(null);
       setUserLocation(null);
       setUsingFallback(false);
+      setAccuracy(null);
+      setLocStatus("idle");
       stopWatching();
       return;
     }
+    stopWatching();
     setUsingFallback(false);
+    setAccuracy(null);
+
     if (!("geolocation" in navigator)) {
       setPosition(CITY_CENTER);
       setUserLocation(CITY_CENTER);
       setNearMe(true);
       setUsingFallback(true);
+      setLocStatus("error");
       return;
     }
+
+    const permission = await checkPermission();
+    if (permission === "denied") {
+      setNearMe(true);
+      setUserLocation(null);
+      setPosition(null);
+      setLocStatus("blocked");
+      return;
+    }
+
     setLocating(true);
+    setLocStatus("locating");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setPosition(p);
         setUserLocation(p);
+        setAccuracy(pos.coords.accuracy);
         setNearMe(true);
         setLocating(false);
+        setLocStatus("ok");
       },
-      () => {
+      (err) => {
+        setLocating(false);
+        if (err && err.code === 1) {
+          setNearMe(true);
+          setUserLocation(null);
+          setPosition(null);
+          setLocStatus("blocked");
+          return;
+        }
         setPosition(CITY_CENTER);
         setUserLocation(CITY_CENTER);
         setNearMe(true);
         setUsingFallback(true);
-        setLocating(false);
+        setLocStatus("error");
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
     );
-    if ("geolocation" in navigator) {
-      positionRef.current = navigator.geolocation.watchPosition(
-        (pos) => {
-          const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setPosition(p);
-          setUserLocation(p);
-          setUsingFallback(false);
-        },
-        () => {
-          /* keep last known position */
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
-      );
-    }
+    positionRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setPosition(p);
+        setUserLocation(p);
+        setUsingFallback(false);
+        setAccuracy(pos.coords.accuracy);
+        setLocStatus("ok");
+      },
+      () => {
+        /* keep last known position */
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
+    );
   };
 
   const { allBusinesses } = useBusinessStore();
@@ -161,6 +202,26 @@ function AnnuaireContent() {
               </button>
               {nearMe && (
                 <div className="mt-3">
+                  {locStatus === "blocked" && (
+                    <div className="rounded-lg bg-red-50 border border-red-200 p-2 mb-2 text-[11px] text-red-700 leading-snug">
+                      {isArabic
+                        ? "تم رفض الوصول إلى موقعك. فعّل الموقع في إعدادات المتصفح ثم أعد المحاولة."
+                        : "Accès à votre position refusé. Autorisez la localisation dans les paramètres du navigateur, puis réessayez."}
+                    </div>
+                  )}
+                  {locStatus === "error" && usingFallback && (
+                    <p className="text-[11px] text-amber-600 mt-1">
+                      {isArabic ? "تعذر تحديد موقعك بدقة. تم استخدام وسط المدينة." : "Impossible de vous localiser précisément. Résultats autour du centre-ville."}
+                    </p>
+                  )}
+                  {locStatus === "ok" && !usingFallback && (
+                    <p className="text-[11px] text-emerald-600 mt-1 flex items-center gap-1">
+                      <Navigation size={11} />
+                      {isArabic
+                        ? (accuracy != null && accuracy > 800 ? "تم تحديد موقعك تقريبياً (شبكة)." : "تم تحديد موقعك بدقة.")
+                        : (accuracy != null && accuracy > 800 ? "Position approximative (réseau)." : "Position précise (GPS).")}
+                    </p>
+                  )}
                   <label className="text-xs text-navy-500">
                     {t.distance}: {radius} {t.km}
                   </label>
@@ -173,11 +234,6 @@ function AnnuaireContent() {
                     onChange={(e) => setRadius(Number(e.target.value))}
                     className="w-full mt-1"
                   />
-                  {usingFallback && (
-                    <p className="text-[11px] text-amber-600 mt-1">
-                      {isArabic ? "تعذر تحديد موقعك بدقة. تم استخدام وسط المدينة." : "Impossible de vous localiser précisément. Résultats autour du centre-ville."}
-                    </p>
-                  )}
                 </div>
               )}
             </div>
