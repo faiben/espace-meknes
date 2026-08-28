@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Business } from "@/types";
-import { getAreaName } from "@/utils/search";
 import { categoryEmojis } from "@/lib/categoryEmojis";
 import { MapPin, Star, Phone, Navigation, MessageCircle, Heart, Share2 } from "lucide-react";
 
@@ -16,7 +15,6 @@ interface BusinessCardProps {
 export function BusinessCard({ business }: BusinessCardProps) {
   const { t, isArabic } = useLang();
   const { user, toggleFavorite, isFavorite } = useAuth();
-  const area = getAreaName(business.areaId);
   const isPro = business.packageType === "pro";
   const isPremium = business.packageType === "premium";
   const hasExtra = isPro || isPremium;
@@ -93,8 +91,6 @@ export function BusinessCard({ business }: BusinessCardProps) {
         </p>
         <div className="flex items-center gap-1 text-xs text-navy-400 mb-3">
           <MapPin size={12} className="text-primary-500" />
-          <span>{isArabic ? area.ar : area.fr}</span>
-          <span className="mx-1 text-navy-300">·</span>
           <span>{t.categories[business.category]}</span>
         </div>
         <div className="flex flex-wrap gap-2">
