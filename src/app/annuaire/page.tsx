@@ -61,13 +61,14 @@ function AnnuaireContent() {
   const filtered = useMemo(() => {
     let results = searchBusinesses(query, undefined, selectedCategory || undefined, allBusinesses);
     if (nearMe && userLocation) {
-      const sorted = sortByDistance(results, userLocation.lat, userLocation.lng);
-      const within = sorted.filter((b) => b.distance <= radius);
-      if (usingFallback || within.length === 0) {
-        results = sorted;
-      } else {
-        results = within;
+      const fullSorted = sortByDistance(results, CITY_CENTER.lat, CITY_CENTER.lng);
+      let sorted = sortByDistance(results, userLocation.lat, userLocation.lng);
+      const nearest = sorted[0]?.distance ?? Infinity;
+      if (usingFallback || nearest > 10) {
+        sorted = fullSorted;
       }
+      const within = sorted.filter((b) => b.distance <= radius);
+      results = within.length > 0 ? within : sorted;
     }
     return results;
   }, [query, selectedCategory, nearMe, userLocation, radius, usingFallback, allBusinesses]);
