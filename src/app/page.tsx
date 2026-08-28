@@ -213,7 +213,6 @@ export default function HomePage() {
               >
                 <MapPin size={20} className="mx-auto text-primary-500 mb-2" />
                 <p className="font-medium text-navy-800 text-sm">{isArabic ? area.nameAr : area.nameFr}</p>
-                <p className="text-xs text-navy-400">{area.postalCode}</p>
               </Link>
             ))}
           </div>
