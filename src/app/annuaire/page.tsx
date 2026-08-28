@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
 import { useBusinessStore } from "@/hooks/useBusinessStore";
 import { searchBusinesses, sortByDistance } from "@/utils/search";
+import { areas } from "@/data";
 import { BusinessCard } from "@/components/BusinessCard";
 import { SearchBar } from "@/components/SearchBar";
 import { BusinessMap } from "@/components/BusinessMap";
@@ -26,6 +27,7 @@ function AnnuaireContent() {
   const [usingFallback, setUsingFallback] = useState(false);
   const [locStatus, setLocStatus] = useState<"idle" | "locating" | "ok" | "blocked" | "error">("idle");
   const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [manualAreaId, setManualAreaId] = useState<string>("");
   const CITY_CENTER = { lat: 34.0331, lng: -5.5473 };
 
   const positionRef = useRef<number | null>(null);
@@ -40,6 +42,19 @@ function AnnuaireContent() {
   useEffect(() => {
     return () => stopWatching();
   }, []);
+
+  const applyManualArea = (areaId: string) => {
+    stopWatching();
+    const area = areas.find((a) => a.id === areaId);
+    if (!area) return;
+    setManualAreaId(areaId);
+    setPosition({ lat: area.lat, lng: area.lng });
+    setUserLocation({ lat: area.lat, lng: area.lng });
+    setUsingFallback(false);
+    setAccuracy(null);
+    setNearMe(true);
+    setLocStatus("ok");
+  };
 
   const checkPermission = useCallback(async (): Promise<"granted" | "denied" | "prompt" | "unknown"> => {
     try {
@@ -60,6 +75,7 @@ function AnnuaireContent() {
       setUserLocation(null);
       setUsingFallback(false);
       setAccuracy(null);
+      setManualAreaId("");
       setLocStatus("idle");
       stopWatching();
       return;
@@ -205,8 +221,8 @@ function AnnuaireContent() {
                   {locStatus === "blocked" && (
                     <div className="rounded-lg bg-red-50 border border-red-200 p-2 mb-2 text-[11px] text-red-700 leading-snug">
                       {isArabic
-                        ? "تم رفض الوصول إلى موقعك. فعّل الموقع في إعدادات المتصفح ثم أعد المحاولة."
-                        : "Accès à votre position refusé. Autorisez la localisation dans les paramètres du navigateur, puis réessayez."}
+                        ? "تم رفض الوصول إلى موقعك. اختر حيّك بالأسفل أو فعّل الموقع في إعدادات المتصفح."
+                        : "Accès à votre position refusé. Choisissez votre quartier ci-dessous, ou autorisez la localisation dans les paramètres du navigateur."}
                     </div>
                   )}
                   {locStatus === "error" && usingFallback && (
@@ -214,7 +230,7 @@ function AnnuaireContent() {
                       {isArabic ? "تعذر تحديد موقعك بدقة. تم استخدام وسط المدينة." : "Impossible de vous localiser précisément. Résultats autour du centre-ville."}
                     </p>
                   )}
-                  {locStatus === "ok" && !usingFallback && (
+                  {locStatus === "ok" && !usingFallback && !manualAreaId && (
                     <p className="text-[11px] text-emerald-600 mt-1 flex items-center gap-1">
                       <Navigation size={11} />
                       {isArabic
@@ -222,7 +238,30 @@ function AnnuaireContent() {
                         : (accuracy != null && accuracy > 800 ? "Position approximative (réseau)." : "Position précise (GPS).")}
                     </p>
                   )}
-                  <label className="text-xs text-navy-500">
+                  {manualAreaId && (() => {
+                    const area = areas.find((a) => a.id === manualAreaId);
+                    return (
+                      <p className="text-[11px] text-primary-600 mt-1">
+                        {isArabic
+                          ? `النتائج حول ${area?.nameAr || ""}.`
+                          : `Résultats autour de ${area?.nameFr || ""}.`}
+                      </p>
+                    );
+                  })()}
+                  <label className="block text-xs text-navy-600 font-medium mt-2 mb-1">
+                    {isArabic ? "حيّك" : "Votre quartier"}
+                  </label>
+                  <select
+                    value={manualAreaId}
+                    onChange={(e) => applyManualArea(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-navy-50"
+                  >
+                    <option value="">{isArabic ? "اختر حيّاً..." : "Choisir un quartier..."}</option>
+                    {areas.map((a) => (
+                      <option key={a.id} value={a.id}>{isArabic ? a.nameAr : a.nameFr}</option>
+                    ))}
+                  </select>
+                  <label className="text-xs text-navy-500 block mt-2">
                     {t.distance}: {radius} {t.km}
                   </label>
                   <input
@@ -250,7 +289,7 @@ function AnnuaireContent() {
             {/* Reset */}
             {(selectedCategory || nearMe) && (
               <button
-                onClick={() => { setSelectedCategory(""); setNearMe(false); setPosition(null); setUserLocation(null); setUsingFallback(false); stopWatching(); }}
+                onClick={() => { setSelectedCategory(""); setNearMe(false); setPosition(null); setUserLocation(null); setUsingFallback(false); setManualAreaId(""); setLocStatus("idle"); setAccuracy(null); stopWatching(); }}
                 className="w-full mt-3 flex items-center justify-center gap-1 text-sm text-red-500 hover:text-red-600"
               >
                 <X size={14} /> {t.resetFilters}
